@@ -1,0 +1,14 @@
+.husky
+.git
+.gitignore
+node_modules
+**/node_modules
+.env*
+!.env.example
+**/Dockerfile
+**/.turbo
+pipeline
+scripts
+terraform
+test
+*.md

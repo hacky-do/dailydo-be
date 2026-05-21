@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, height=device-height, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+</head>
+<body>
+<div id="popup_zip"
+     style="position:fixed;overflow:hidden;z-index:998;-webkit-overflow-scrolling:touch;top:0;left:0;width:100%;height:100%;"></div>
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+  var webkit = webkit
+  var isFlutter = false
+  window.addEventListener('flutterInAppWebViewPlatformReady', (event) => {
+    isFlutter = true
+  })
+
+  var element_layer = document.getElementById('popup_zip')
+  new daum.Postcode({
+    oncomplete: function(data) {
+      if (window.CallbackWebInterface) {
+        window.CallbackWebInterface.getAddress(data.zonecode, data.roadAddress)
+      } else if (window.ReactNativeWebView) {
+        var message = JSON.stringify({'command': 'getAddress', 'postcode': data.zonecode, 'address': data.address})
+        window.ReactNativeWebView.postMessage(message)
+      } else if (webkit && webkit.messageHandlers && webkit.messageHandlers.callbackHandler) {
+        var message = {'command': 'getAddress', 'postcode': data.zonecode, 'address': data.roadAddress}
+        webkit.messageHandlers.callbackHandler.postMessage(message)
+      } else if (isFlutter) {
+        var message = {'postcode': data.zonecode, 'address': data.roadAddress}
+        window.flutter_inappwebview.callHandler('getAddress', message)
+      } else {
+        alert('모바일 또는 태블릿 기기에서만 사용 가능합니다.')
+      }
+    },
+    width: '100%',
+    height: '100%',
+    maxSuggestItems: 5
+  }).embed(element_layer, {autoClose: false})
+</script>
+</body>
+</html>

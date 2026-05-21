@@ -1,0 +1,20 @@
+{
+  "name": "@data/config",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "lint": "eslint . --fix",
+    "format": "prettier ./src --write"
+  },
+  "dependencies": {
+    "es-toolkit": "catalog:common"
+  },
+  "devDependencies": {
+    "@system/eslint": "workspace:*",
+    "@system/tsup": "workspace:*",
+    "@system/typescript": "workspace:*",
+    "@types/node": "catalog:common",
+    "tsup": "catalog:common"
+  }
+}

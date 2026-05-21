@@ -1,0 +1,21 @@
+info:
+  description:
+    - description
+tagGroups:
+  - name: 인증
+    tags:
+      - 인증
+      - OTP 인증
+
+  - name: 컨텐츠
+    tags:
+      - FAQ
+      - 공지사항
+
+  - name: 회원
+    tags:
+      - 회원 정보
+
+  - name: 파일
+    tags:
+      - 파일

@@ -1,0 +1,5 @@
+{
+  "*.{js,mjs,ts,tsx}": ["eslint --fix", "prettier --write"],
+  "*.{json,yaml,yml}": ["prettier --write"],
+  "!**/routeTree.gen.ts": []
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@system/middlewares",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup --clean",
+    "dev": "tsup --watch",
+    "lint": "eslint . --fix",
+    "format": "prettier ./src --write"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "catalog:nest",
+    "@nestjs/core": "catalog:nest",
+    "@nestjs/swagger": "catalog:nest",
+    "class-validator": "catalog:nest",
+    "class-transformer": "catalog:nest",
+    "fastify": "catalog:common",
+    "rxjs": "catalog:nest"
+  },
+  "dependencies": {
+    "@data/lib": "workspace:*",
+    "pino": "catalog:common",
+    "pino-http": "catalog:common"
+  },
+  "devDependencies": {
+    "@swc/core": "catalog:nest",
+    "@system/eslint": "workspace:*",
+    "@system/tsup": "workspace:*",
+    "@system/typescript": "workspace:*",
+    "@types/node": "catalog:common",
+    "tsup": "catalog:common"
+  }
+}

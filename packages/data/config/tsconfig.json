@@ -1,0 +1,26 @@
+{
+  "extends": "@system/typescript/library.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "paths": {
+    "@data/config": [
+      "../../packages/data/config/src"
+    ],
+    "@data/domain": [
+      "../../packages/data/domain/src"
+    ],
+    "@data/domain/*": [
+      "../../packages/data/domain/src/*"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts"
+  ]
+}

@@ -1,0 +1,88 @@
+name: backend
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: ${DB_TIMEZONE}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - app
+
+  user-api:
+    image: ${DOCKERHUB_USERNAME}/dailydo-user-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      USER_API_PORT: "${USER_API_PORT:-4000}"
+      REDIS_HOST: redis
+      NODE_OPTIONS: --no-deprecation
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_SSL: "false"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app
+
+  batch:
+    image: ${DOCKERHUB_USERNAME}/dailydo-batch:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      BATCH_PORT: "${BATCH_PORT:-4002}"
+      REDIS_HOST: redis
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_SSL: "false"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - letsencrypt:/etc/letsencrypt:ro
+      - webroot:/var/www/certbot
+    depends_on:
+      - user-api
+    networks:
+      - app
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - webroot:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done"
+
+volumes:
+  postgres-data:
+  redis-data:
+  letsencrypt:
+  webroot:
+
+networks:
+  app:
+    driver: bridge

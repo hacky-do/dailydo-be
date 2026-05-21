@@ -1,0 +1,35 @@
+{
+  "extends": "@system/typescript/nest.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@data/config": [
+        "../../packages/data/config/src"
+      ],
+      "@data/decorators": [
+        "../../packages/data/decorators/src"
+      ],
+      "@data/domain": [
+        "../../packages/data/domain/src"
+      ],
+      "@data/domain/*": [
+        "../../packages/data/domain/src/*"
+      ],
+      "@data/dto": [
+        "../../packages/data/dto/src"
+      ],
+      "@data/dto/*": [
+        "../../packages/data/dto/src/*"
+      ],
+      "@data/lib": [
+        "../../packages/data/lib/src"
+      ],
+      "@data/lib/*": [
+        "../../packages/data/lib/src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

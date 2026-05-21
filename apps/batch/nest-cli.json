@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "entryFile": "apps/batch/src/main",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "watchAssets": true,
+    "assets": [
+      {
+        "include": "public/**/*",
+        "outDir": "dist/apps/batch/src"
+      },
+      {
+        "include": "**/*.{json,yml,yaml,ejs,md}",
+        "exclude": "public/**/*",
+        "outDir": "dist/apps/batch/src"
+      }
+    ],
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "introspectComments": true
+        }
+      }
+    ]
+  }
+}
+

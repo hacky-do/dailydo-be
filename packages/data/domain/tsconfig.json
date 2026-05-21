@@ -1,0 +1,30 @@
+{
+  "extends": "@system/typescript/library.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "dist",
+    "paths": {
+      "@data/dto": [
+        "../dto/src"
+      ],
+      "@data/dto/*": [
+        "../dto/src/*"
+      ],
+      "@data/lib": [
+        "../lib/src"
+      ],
+      "@data/lib/*": [
+        "../lib/src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts"
+  ]
+}

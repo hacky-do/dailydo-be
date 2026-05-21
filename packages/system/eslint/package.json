@@ -1,0 +1,20 @@
+{
+  "name": "@system/eslint",
+  "type": "module",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "catalog:common",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-security": "^3.0.1",
+    "globals": "catalog:common",
+    "jest": "catalog:common",
+    "typescript": "catalog:common",
+    "typescript-eslint": "^8.54.0"
+  }
+}

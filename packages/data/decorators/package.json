@@ -1,0 +1,23 @@
+{
+  "name": "@data/decorators",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "lint": "eslint . --fix",
+    "format": "prettier ./src --write"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "catalog:nest",
+    "@nestjs/core": "catalog:nest",
+    "@nestjs/swagger": "catalog:nest",
+    "class-validator": "catalog:nest",
+    "class-transformer": "catalog:nest",
+    "dayjs": "catalog:common"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@system/eslint": "workspace:*",
+    "@system/typescript": "workspace:*"
+  }
+}

@@ -1,0 +1,1 @@
+- type: image 일 경우는 width, height 필수
