@@ -14,17 +14,16 @@ export { MyLog } from './my-log/my-log.entity'
 
 export {
   CANDIDATE_COUNT,
-  cycleSeed,
-  DailyMissionCycle,
   DailyMissionStatus,
+  dailySeed,
+  getMissionDate,
   MAX_SELECTABLE,
   MEMO_MAX_LENGTH,
   MIN_SELECTABLE,
   MissionType,
   MYLOG_ALLOWED_MIME,
   MYLOG_IMAGE_MAX_BYTES,
-  resolveCycle,
   sampleCandidates,
   SPECIAL_PROBABILITY,
 } from './_shared/cycle'
-export type { CyclePosition, SampleableMission } from './_shared/cycle'
+export type { SampleableMission } from './_shared/cycle'

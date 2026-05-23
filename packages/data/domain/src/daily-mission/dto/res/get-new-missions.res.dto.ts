@@ -3,7 +3,6 @@ import { Type } from 'class-transformer'
 import {
   IsArray,
   IsBoolean,
-  IsDate,
   IsEnum,
   IsInt,
   IsOptional,
@@ -11,7 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-import { DailyMissionCycle, DailyMissionStatus } from '../../../_shared/cycle'
+import { DailyMissionStatus } from '../../../_shared/cycle'
 
 /** GET /api/missions/new 후보 1개 — 무저장이라 itemId 없음 (backend-spec §4.5). */
 export class NewMissionCandidateDto {
@@ -52,10 +51,10 @@ export class NewMissionCandidateDto {
 }
 
 /**
- * GET /api/missions/new 응답 (backend-spec §4.5).
- * - 회원·미확정: status='ARRIVED' + items 10개
- * - 회원·확정됨: status='CONFIRMED' + items=[]
- * - 비회원: status/cycle* null + items 고정 10개 + isGuest:true
+ * GET /api/missions/new 응답
+ * - 회원·미확정: status='ARRIVED' + missionDate + items 10개
+ * - 회원·확정됨: status='CONFIRMED' + missionDate + items=[]
+ * - 비회원: status/missionDate null + items 고정 10개 + isGuest:true
  */
 export class GetNewMissionsResDto {
   @IsOptional()
@@ -67,21 +66,6 @@ export class GetNewMissionsResDto {
   @IsString()
   @ApiProperty({ nullable: true, description: 'KST YYYY-MM-DD' })
   missionDate: string | null
-
-  @IsOptional()
-  @IsEnum(DailyMissionCycle)
-  @ApiProperty({ enum: DailyMissionCycle, nullable: true })
-  cycle: DailyMissionCycle | null
-
-  @IsOptional()
-  @IsDate()
-  @ApiProperty({ nullable: true })
-  cycleStartedAt: Date | null
-
-  @IsOptional()
-  @IsDate()
-  @ApiProperty({ nullable: true })
-  cycleEndsAt: Date | null
 
   @IsArray()
   @ValidateNested({ each: true })

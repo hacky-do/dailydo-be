@@ -5,7 +5,7 @@ import { IsInt, IsOptional, Matches, Max, Min } from 'class-validator'
 /**
  * GET /api/users/me/mylogs?limit&cursor (backend-spec §4.5).
  *
- * - `cursor` = YYYY-MM. 없으면 현재 KST 월 (서비스에서 `resolveCycle` 로 산출)
+ * - `cursor` = YYYY-MM. 없으면 현재 KST 월 (서비스에서 `getMissionDate` 로 산출)
  * - `limit` = 한 번에 반환할 월 개수 (기본 5, 1~12)
  */
 export class GetMylogsCalendarReqDto {

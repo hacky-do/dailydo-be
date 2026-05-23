@@ -4,10 +4,9 @@ import utc from 'dayjs/plugin/utc'
 
 import {
   CANDIDATE_COUNT,
-  cycleSeed,
-  DailyMissionCycle,
+  dailySeed,
+  getMissionDate,
   MissionType,
-  resolveCycle,
   SampleableMission,
   sampleCandidates,
 } from './cycle'
@@ -15,88 +14,62 @@ import {
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-/** KST 로컬 시각 문자열을 실제 UTC Date(=resolveCycle now 인자) 로 변환 */
+/** KST 로컬 시각 문자열을 실제 UTC Date(=함수 now 인자) 로 변환 */
 const kstInstant = (s: string): Date => dayjs.tz(s, 'Asia/Seoul').toDate()
 
-describe('cycle: KST cycle 경계 / seed / deterministic 샘플링', () => {
+describe('cycle (v2 — 하루 1번 모델): KST 자정 경계 / seed / deterministic 샘플링', () => {
   // ──────────────────────────────────────────────────────────────
-  // 정책 1 — KST 05:00~17:00 MORNING, 17:00~익일 05:00 EVENING
+  // 정책 1 — KST 자정 경계 (하루 1번)
   // ──────────────────────────────────────────────────────────────
-  describe('정책: KST 05:00~17:00은 MORNING, 17:00~익일05:00은 EVENING이어야 한다', () => {
-    it('resolveCycle_kst0459_belongsToPreviousDayEvening', () => {
-      const position = resolveCycle(kstInstant('2026-05-22 04:59'))
-      expect(position.missionDate).toBe('2026-05-21')
-      expect(position.cycle).toBe(DailyMissionCycle.EVENING)
+  describe('정책: missionDate 는 KST 자정 기준으로 결정된다', () => {
+    it('getMissionDate_kst0000_isTheNewDay', () => {
+      expect(getMissionDate(kstInstant('2026-05-22 00:00'))).toBe('2026-05-22')
     })
 
-    it('resolveCycle_kst0500_startsTodayMorning', () => {
-      const position = resolveCycle(kstInstant('2026-05-22 05:00'))
-      expect(position.missionDate).toBe('2026-05-22')
-      expect(position.cycle).toBe(DailyMissionCycle.MORNING)
+    it('getMissionDate_kst2359_isStillSameDay', () => {
+      expect(getMissionDate(kstInstant('2026-05-22 23:59'))).toBe('2026-05-22')
     })
 
-    it('resolveCycle_kst1659_stillMorning', () => {
-      const position = resolveCycle(kstInstant('2026-05-22 16:59'))
-      expect(position.cycle).toBe(DailyMissionCycle.MORNING)
+    it('getMissionDate_kst0001_nextDay', () => {
+      expect(getMissionDate(kstInstant('2026-05-23 00:01'))).toBe('2026-05-23')
     })
 
-    it('resolveCycle_kst1700_switchesToEvening', () => {
-      const position = resolveCycle(kstInstant('2026-05-22 17:00'))
-      expect(position.missionDate).toBe('2026-05-22')
-      expect(position.cycle).toBe(DailyMissionCycle.EVENING)
+    it('getMissionDate_serverTzAgnostic_sameResultRegardlessOfHostTz', () => {
+      // 같은 UTC instant → 호스트 TZ 무관하게 같은 결과
+      // 2026-05-22T15:00:00.000Z = 2026-05-23 00:00 KST
+      expect(getMissionDate(new Date('2026-05-22T15:00:00.000Z'))).toBe('2026-05-23')
+    })
+
+    it('getMissionDate_kstJustBeforeMidnight_staysSameDay', () => {
+      // 2026-05-22T14:59:59.999Z = 2026-05-22 23:59:59 KST (전날)
+      expect(getMissionDate(new Date('2026-05-22T14:59:59.999Z'))).toBe('2026-05-22')
     })
   })
 
   // ──────────────────────────────────────────────────────────────
-  // 정책 2 — 자정 직후(00:00~04:59)는 전날 EVENING, 경계 instant 정확성
+  // 정책 2 — dailySeed determinism
   // ──────────────────────────────────────────────────────────────
-  describe('정책: 자정 직후(00:30)는 전날 EVENING이고 경계 instant가 정확해야 한다', () => {
-    it('resolveCycle_kst0030_isPreviousEveningWithCorrectBoundaries', () => {
-      const position = resolveCycle(kstInstant('2026-05-23 00:30'))
-      expect(position.missionDate).toBe('2026-05-22')
-      expect(position.cycle).toBe(DailyMissionCycle.EVENING)
-
-      // cycleStartedAt = 2026-05-22 17:00 KST = 2026-05-22T08:00:00Z
-      expect(position.cycleStartedAt.toISOString()).toBe('2026-05-22T08:00:00.000Z')
-      // cycleEndsAt   = 2026-05-23 05:00 KST = 2026-05-22T20:00:00Z
-      expect(position.cycleEndsAt.toISOString()).toBe('2026-05-22T20:00:00.000Z')
+  describe('정책: dailySeed 는 같은 입력에 같은 값, 다른 입력에 다른 값을 내야 한다', () => {
+    it('dailySeed_sameInputs_sameSeed', () => {
+      expect(dailySeed(42, '2026-05-22')).toBe(dailySeed(42, '2026-05-22'))
     })
 
-    it('resolveCycle_serverTzAgnostic_sameResultRegardlessOfHostTz', () => {
-      // 같은 UTC instant → 호스트 TZ 무관하게 같은 결과 (backend-spec §1)
-      const sameInstant = new Date('2026-05-22T08:00:00.000Z') // = 17:00 KST
-      const position = resolveCycle(sameInstant)
-      expect(position.cycle).toBe(DailyMissionCycle.EVENING)
-      expect(position.missionDate).toBe('2026-05-22')
+    it('dailySeed_differentDate_differentSeed', () => {
+      expect(dailySeed(42, '2026-05-22')).not.toBe(dailySeed(42, '2026-05-23'))
+    })
+
+    it('dailySeed_differentUser_differentSeed', () => {
+      expect(dailySeed(1, '2026-05-22')).not.toBe(dailySeed(2, '2026-05-22'))
+    })
+
+    it('dailySeed_guestNullUser_isStableAcrossGuests', () => {
+      // 비회원(userId=null) 은 모두 동일 seed
+      expect(dailySeed(null, '2026-05-22')).toBe(dailySeed(null, '2026-05-22'))
     })
   })
 
   // ──────────────────────────────────────────────────────────────
-  // 정책 3 — cycleSeed determinism
-  // ──────────────────────────────────────────────────────────────
-  describe('정책: cycleSeed는 같은 입력에 같은 값, 다른 입력에 다른 값을 내야 한다', () => {
-    it('cycleSeed_sameInputs_sameSeed', () => {
-      const first = cycleSeed(42, '2026-05-22', DailyMissionCycle.MORNING)
-      const second = cycleSeed(42, '2026-05-22', DailyMissionCycle.MORNING)
-      expect(first).toBe(second)
-    })
-
-    it('cycleSeed_differentCycle_differentSeed', () => {
-      const morning = cycleSeed(42, '2026-05-22', DailyMissionCycle.MORNING)
-      const evening = cycleSeed(42, '2026-05-22', DailyMissionCycle.EVENING)
-      expect(morning).not.toBe(evening)
-    })
-
-    it('cycleSeed_guestNullUser_isStableAcrossGuests', () => {
-      // 비회원(userId=null) 은 모두 동일 seed (backend-spec §4.5)
-      const guestA = cycleSeed(null, '2026-05-22', DailyMissionCycle.MORNING)
-      const guestB = cycleSeed(null, '2026-05-22', DailyMissionCycle.MORNING)
-      expect(guestA).toBe(guestB)
-    })
-  })
-
-  // ──────────────────────────────────────────────────────────────
-  // 정책 4 — 샘플링 재현성
+  // 정책 3 — 샘플링 재현성
   // ──────────────────────────────────────────────────────────────
   describe('정책: 같은 seed와 pool이면 후보 10개가 동일하게 재현되어야 한다', () => {
     const normalPool: SampleableMission[] = Array.from({ length: 30 }, (_, i) => ({
@@ -105,21 +78,21 @@ describe('cycle: KST cycle 경계 / seed / deterministic 샘플링', () => {
     }))
 
     it('sampleCandidates_sameSeedSamePool_returnsIdenticalCandidates', () => {
-      const seed = cycleSeed(42, '2026-05-22', DailyMissionCycle.MORNING)
+      const seed = dailySeed(42, '2026-05-22')
       const firstDraw = sampleCandidates(seed, normalPool).map((m) => m.id)
       const secondDraw = sampleCandidates(seed, normalPool).map((m) => m.id)
       expect(secondDraw).toEqual(firstDraw)
     })
 
     it('sampleCandidates_enoughNormals_returnsExactlyTen', () => {
-      const seed = cycleSeed(42, '2026-05-22', DailyMissionCycle.MORNING)
+      const seed = dailySeed(42, '2026-05-22')
       const candidates = sampleCandidates(seed, normalPool)
       expect(candidates).toHaveLength(CANDIDATE_COUNT)
     })
   })
 
   // ──────────────────────────────────────────────────────────────
-  // 정책 5 — special 정책: 포함 시 최대 1개, 나머지는 normal
+  // 정책 4 — special 정책: 최대 1개, 나머지 normal
   // ──────────────────────────────────────────────────────────────
   describe('정책: special은 포함되어도 최대 1개이고 나머지는 normal이어야 한다', () => {
     const mixedPool: SampleableMission[] = [
@@ -129,8 +102,7 @@ describe('cycle: KST cycle 경계 / seed / deterministic 샘플링', () => {
     ]
 
     it('sampleCandidates_anySeed_containsAtMostOneSpecial', () => {
-      // SPECIAL_PROBABILITY=0.03 의 분포는 검증하지 않는다 (분포는 §10 단언 X).
-      // 정책 자체("최대 1개")만 다양한 seed 에서 위반 없는지 검사.
+      // 1000 seed 반복 — 정책("최대 1개") 위반 없는지
       for (let seed = 0; seed < 1000; seed++) {
         const candidates = sampleCandidates(seed, mixedPool)
         const specialCount = candidates.filter((m) => m.type === MissionType.SPECIAL).length
@@ -140,7 +112,6 @@ describe('cycle: KST cycle 경계 / seed / deterministic 샘플링', () => {
     })
 
     it('sampleCandidates_emptySpecialPool_fallsBackToTenNormals', () => {
-      // special 풀이 비면 special 포함 판정과 무관하게 normal 10 (backend-spec §5.1.1)
       const onlyNormals: SampleableMission[] = Array.from({ length: 12 }, (_, i) => ({
         id: i + 1,
         type: MissionType.NORMAL,

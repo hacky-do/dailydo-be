@@ -8,13 +8,13 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { DataSource, EntityManager, Repository } from 'typeorm'
 
 import {
-  cycleSeed,
   DailyMissionStatus,
+  dailySeed,
+  getMissionDate,
   MAX_SELECTABLE,
   MEMO_MAX_LENGTH,
   MIN_SELECTABLE,
   MissionType,
-  resolveCycle
 } from '../_shared/cycle'
 import { MissionCategory } from '../mission-category/mission-category.entity'
 import { Mission } from '../mission/mission.entity'
@@ -44,14 +44,13 @@ export class DailyMissionService {
   ) {}
 
   async getNewMissions(userId: number | null): Promise<GetNewMissionsResDto> {
-    const pos = resolveCycle(new Date())
+    const missionDate = getMissionDate(new Date())
 
     if (userId !== null) {
       const confirmed = await this.dailyMissionRepo.findOne({
         where: {
           userId,
-          missionDate: pos.missionDate,
-          cycle: pos.cycle,
+          missionDate,
           status: DailyMissionStatus.CONFIRMED,
         },
       })
@@ -59,10 +58,7 @@ export class DailyMissionService {
       if (confirmed) {
         return new GetNewMissionsResDto({
           status: DailyMissionStatus.CONFIRMED,
-          missionDate: pos.missionDate,
-          cycle: pos.cycle,
-          cycleStartedAt: null,
-          cycleEndsAt: null,
+          missionDate,
           items: [],
           minSelectableCount: MIN_SELECTABLE,
           maxSelectableCount: MAX_SELECTABLE,
@@ -72,7 +68,7 @@ export class DailyMissionService {
     }
 
     const pool = await this.missionService.getActiveMissionPool()
-    const seed = cycleSeed(userId, pos.missionDate, pos.cycle)
+    const seed = dailySeed(userId, missionDate)
     const candidates = this.missionService.sampleCandidates(seed, pool)
     const categories = await this.categoryRepo.find()
     const categoryNameById = new Map<number, string>(
@@ -92,10 +88,7 @@ export class DailyMissionService {
 
     return new GetNewMissionsResDto({
       status: userId !== null ? DailyMissionStatus.ARRIVED : null,
-      missionDate: userId !== null ? pos.missionDate : null,
-      cycle: userId !== null ? pos.cycle : null,
-      cycleStartedAt: userId !== null ? pos.cycleStartedAt : null,
-      cycleEndsAt: userId !== null ? pos.cycleEndsAt : null,
+      missionDate: userId !== null ? missionDate : null,
       items,
       minSelectableCount: MIN_SELECTABLE,
       maxSelectableCount: MAX_SELECTABLE,
@@ -119,10 +112,10 @@ export class DailyMissionService {
       throw new BadRequestException('mission_selection_required')
     }
 
-    const pos = resolveCycle(new Date())
+    const missionDate = getMissionDate(new Date())
     const pool = await this.missionService.getActiveMissionPool()
     const candidates = this.missionService.sampleCandidates(
-      cycleSeed(userId, pos.missionDate, pos.cycle),
+      dailySeed(userId, missionDate),
       pool,
     )
     const candidateById = new Map<number, Mission>(
@@ -140,24 +133,16 @@ export class DailyMissionService {
     try {
       const insertResult = await qr.manager.query(
         `INSERT INTO "DailyMission"
-           ("userId","missionDate","cycle","cycleStartedAt","cycleEndsAt","status","arrivedAt","confirmedAt")
-         VALUES ($1,$2,$3,$4,$5,'CONFIRMED',$6,$7)
-         ON CONFLICT ("userId","missionDate","cycle") DO NOTHING
+           ("userId","missionDate","status","arrivedAt","confirmedAt")
+         VALUES ($1,$2,'CONFIRMED',$3,$4)
+         ON CONFLICT ("userId","missionDate") DO NOTHING
          RETURNING "id"`,
-        [
-          userId,
-          pos.missionDate,
-          pos.cycle,
-          pos.cycleStartedAt,
-          pos.cycleEndsAt,
-          now,
-          now,
-        ],
+        [userId, missionDate, now, now],
       )
 
       if (insertResult.length === 0) {
         const existing = await qr.manager.findOneOrFail(DailyMission, {
-          where: { userId, missionDate: pos.missionDate, cycle: pos.cycle },
+          where: { userId, missionDate },
         })
         const existingItems = await qr.manager.find(DailyMissionItem, {
           where: { dailyMissionId: existing.id, isSelected: true },
@@ -232,7 +217,7 @@ export class DailyMissionService {
       return new GetMissionsResDto({ isGuest: true, items: [] })
     }
 
-    const pos = resolveCycle(new Date())
+    const missionDate = getMissionDate(new Date())
     const rows = await this.dailyMissionItemRepo
       .createQueryBuilder('item')
       .innerJoin(DailyMission, 'dm', 'dm."id" = item."dailyMissionId"')
@@ -249,8 +234,7 @@ export class DailyMissionService {
         'ums."userId" = dm."userId" AND ums."missionId" = item."missionId"',
       )
       .where('dm."userId" = :userId', { userId })
-      .andWhere('dm."missionDate" = :missionDate', { missionDate: pos.missionDate })
-      .andWhere('dm."cycle" = :cycle', { cycle: pos.cycle })
+      .andWhere('dm."missionDate" = :missionDate', { missionDate })
       .andWhere('item."isSelected" = true')
       .select([
         'item."id" AS "itemId"',

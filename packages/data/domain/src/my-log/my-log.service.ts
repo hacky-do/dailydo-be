@@ -6,7 +6,7 @@ import {
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { DataSource, EntityManager, Repository } from 'typeorm'
 
-import { MEMO_MAX_LENGTH, resolveCycle } from '../_shared/cycle'
+import { getMissionDate, MEMO_MAX_LENGTH } from '../_shared/cycle'
 import { DailyMissionItem } from '../daily-mission/daily-mission-item.entity'
 import { DailyMission } from '../daily-mission/daily-mission.entity'
 import { GetMylogsCalendarReqDto } from './dto/req/get-mylogs-calendar.req.dto'
@@ -40,7 +40,7 @@ export class MyLogService {
   ): Promise<GetMylogsCalendarResDto> {
     const limit = query.limit ?? DEFAULT_CALENDAR_LIMIT
     const startMonth =
-      query.cursor ?? resolveCycle(new Date()).missionDate.slice(0, 7)
+      query.cursor ?? getMissionDate(new Date()).slice(0, 7)
 
     const rows = await this.dataSource.query<
       { date: string; count: string }[]
