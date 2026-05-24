@@ -35,7 +35,7 @@ services:
         APP_PORT: 4000
         NODE_ENV: development
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.dev
     environment:
       USER_API_PORT: "${USER_API_PORT:-4000}"
       REDIS_HOST: redis
@@ -61,7 +61,7 @@ services:
         APP_PORT: 4002
         NODE_ENV: development
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.dev
     environment:
       BATCH_PORT: "${BATCH_PORT:-4002}"
       REDIS_HOST: redis
