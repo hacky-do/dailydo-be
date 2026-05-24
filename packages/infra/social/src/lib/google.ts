@@ -8,7 +8,7 @@ function getOauth2Options(options: {
   callbackUri: string
   scope?: string[]
 }): FastifyOAuth2Options {
-  const { clientId, clientSecret, callbackUri, scope = ['email', 'name'] } = options
+  const { clientId, clientSecret, callbackUri, scope = ['email', 'profile'] } = options
   return {
     name: 'googleOauth2',
     scope,

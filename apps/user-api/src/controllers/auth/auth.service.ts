@@ -55,12 +55,13 @@ export class AuthService {
         const verification = await this.verificationRepository.findOne({
           where: {
             id: verificationId,
-            email,
             used: false,
             confirmed: true
           }
         })
         if (!verification || verification.type !== 'register') throw new BadRequestException('invalid_code_token')
+        if (verification.email && verification.email !== email) throw new BadRequestException('invalid_code_token')
+        if (verification.phone && verification.phone !== phone) throw new BadRequestException('invalid_code_token')
         await queryRunner.manager.update(Verification, verificationId, { used: true })
       }
 

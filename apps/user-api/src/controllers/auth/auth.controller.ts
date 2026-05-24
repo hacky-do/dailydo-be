@@ -20,6 +20,7 @@ import { JwtStrategy } from '../../strategies/jwt.strategy'
 import { AuthService } from './auth.service'
 import { DeleteAuthReqDto } from './dto/req/delete-auth.req.dto'
 import { GetAuthOauth2ReqDto } from './dto/req/get-auth-oauth2.req.dto'
+import { PostAuthEmailReqDto } from './dto/req/post-auth-email.req.dto'
 import { PostAuthOauth2TokenReqDto } from './dto/req/post-auth-oauth2-token.req.dto'
 import { PostAuthRefreshReqDto } from './dto/req/post-auth-refresh.req.dto'
 import { PostAuthRegisterReqDto } from './dto/req/post-auth-register.req.dto'
@@ -47,6 +48,20 @@ export class AuthController {
   async postRegister(
     @Res({ passthrough: true }) res: FastifyReply,
     @Body() data: PostAuthRegisterReqDto
+  ): Promise<PostAuthResDto> {
+    const ret = await this.authService.register(data)
+    this.setTokenCookies(res, ret.accessToken, ret.refreshToken)
+    return ret
+  }
+
+  @Public()
+  @Post('email')
+  @ApiOperation({ summary: '이메일 회원가입' })
+  @ApiResponse({ status: 201, type: PostAuthResDto })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async postEmailRegister(
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Body() data: PostAuthEmailReqDto
   ): Promise<PostAuthResDto> {
     const ret = await this.authService.register({ type: UserAccountType.email, ...data })
     this.setTokenCookies(res, ret.accessToken, ret.refreshToken)

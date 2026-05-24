@@ -7,6 +7,7 @@ export enum PostAuthRegisterReqDtoType {
   email = 'email',
   kakao = 'kakao',
   google = 'google',
+  naver = 'naver',
   apple = 'apple',
   facebook = 'facebook'
 }

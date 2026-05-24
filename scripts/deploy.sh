@@ -2,8 +2,8 @@
 # EC2 deploy script — run by GitHub Actions via SSH
 set -euo pipefail
 
-DOMAIN="api.dailydo.shop"
-EMAIL="admin@dailydo.shop"
+DOMAIN="api.daily-do.com"
+EMAIL="admin@daily-do.com"
 APP_DIR="/home/ubuntu/app"
 VOLUME_NAME="backend_letsencrypt"
 
@@ -16,7 +16,7 @@ write_http_conf() {
   cat > docker/nginx/conf.d/default.conf << 'NGINX'
 server {
     listen 80;
-    server_name api.dailydo.shop;
+    server_name api.daily-do.com;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -38,7 +38,7 @@ write_https_conf() {
   cat > docker/nginx/conf.d/default.conf << 'NGINX'
 server {
     listen 80;
-    server_name api.dailydo.shop;
+    server_name api.daily-do.com;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -52,11 +52,11 @@ server {
 server {
     listen 443 ssl;
     http2 on;
-    server_name api.dailydo.shop;
+    server_name api.daily-do.com;
 
-    ssl_certificate     /etc/letsencrypt/live/api.dailydo.shop/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.dailydo.shop/privkey.pem;
-    ssl_trusted_certificate /etc/letsencrypt/live/api.dailydo.shop/chain.pem;
+    ssl_certificate     /etc/letsencrypt/live/api.daily-do.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.daily-do.com/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/api.daily-do.com/chain.pem;
 
     ssl_protocols             TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;
@@ -111,7 +111,7 @@ else
   sleep 5
 
   echo "  Requesting certificate from Let's Encrypt..."
-  docker compose run --rm certbot certonly \
+  docker compose run --rm --entrypoint certbot certbot certonly \
     --webroot --webroot-path=/var/www/certbot \
     --email "$EMAIL" --agree-tos --no-eff-email \
     -d "$DOMAIN"

@@ -9,7 +9,7 @@ import { PostVerificationConfirmResDto } from './dto/res/post-verification-confi
 import { PostVerificationResDto } from './dto/res/post-verification.res.dto'
 
 @ApiTags('OTP 인증')
-@Controller('llm')
+@Controller('verification')
 export class VerificationsController {
   constructor(private readonly verificationService: VerificationService) {}
 
