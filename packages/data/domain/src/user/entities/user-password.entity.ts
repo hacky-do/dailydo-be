@@ -17,7 +17,7 @@ export class UserPassword {
   @Column({ type: 'char', length: 88 })
   password: string
 
-  @Column({ type: 'char', length: 88 })
+  @Column({ length: 88 })
   salt: string
 
   @CreateDateColumn()
