@@ -25,10 +25,10 @@ export class AwsService {
     fileName?: string
   }): Promise<{ path: string; url: string; fields: Record<string, string> }> {
     return lib.generatePreSignedUrl(this.s3Client, {
+      ...options,
       bucket: this.config.bucket,
       key: `${this.config.uploadPrefix}/${options.key}`,
-      maxFileSize: 1024 * 1024 * 10,
-      ...options
+      maxFileSize: 1024 * 1024 * 10
     })
   }
 
