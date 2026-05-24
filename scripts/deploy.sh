@@ -124,7 +124,8 @@ fi
 # ── cleanup old images ─────────────────────────────────────────────────────
 
 echo "▶ Cleaning up unused Docker resources..."
-docker system prune -af --volumes=false
+timeout 60s docker system prune -af --volumes=false || \
+  echo "⚠ Docker cleanup skipped or timed out; deployment continues."
 
 # ── status ─────────────────────────────────────────────────────────────────
 
