@@ -82,7 +82,8 @@ export class SocialService implements OnApplicationBootstrap {
         throw new Error('Redirect URI is required')
       }
       const { token } = await fastify[oauth2Option.name].getAccessTokenFromAuthorizationCodeFlow(req)
-      const account = await this.getAccountIdFromToken(provider, token.access_token)
+      const providerToken = provider === 'google' ? token.id_token || token.access_token : token.access_token
+      const account = await this.getAccountIdFromToken(provider, providerToken)
 
       const resUser = {
         email: account.email,

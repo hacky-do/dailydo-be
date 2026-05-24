@@ -19,8 +19,8 @@ function getOauth2Options(options?: {
     scope,
     credentials: {
       client: {
-        id: 'KuaL1Vz26AIFeuDxfOLF',
-        secret: 'VwwbURUNOB'
+        id: clientId,
+        secret: clientSecret
       },
       auth: {
         authorizePath: '/oauth2.0/authorize',
@@ -30,8 +30,8 @@ function getOauth2Options(options?: {
     },
     callbackUri: `${callbackUri}/naver`,
     tokenRequestParams: {
-      client_id: 'KuaL1Vz26AIFeuDxfOLF',
-      client_secret: 'VwwbURUNOB',
+      client_id: clientId,
+      client_secret: clientSecret,
       grant_type: 'authorization_code'
     },
     callbackUriParams

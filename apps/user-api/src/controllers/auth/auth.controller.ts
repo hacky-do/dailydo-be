@@ -49,7 +49,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: FastifyReply,
     @Body() data: PostAuthRegisterReqDto
   ): Promise<PostAuthResDto> {
-    const ret = await this.authService.register({ type: UserAccountType.email, ...data })
+    const ret = await this.authService.register(data)
     this.setTokenCookies(res, ret.accessToken, ret.refreshToken)
     return ret
   }
