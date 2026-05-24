@@ -111,7 +111,7 @@ else
   sleep 5
 
   echo "  Requesting certificate from Let's Encrypt..."
-  docker compose run --rm certbot certonly \
+  docker compose run --rm --entrypoint certbot certbot certonly \
     --webroot --webroot-path=/var/www/certbot \
     --email "$EMAIL" --agree-tos --no-eff-email \
     -d "$DOMAIN"
