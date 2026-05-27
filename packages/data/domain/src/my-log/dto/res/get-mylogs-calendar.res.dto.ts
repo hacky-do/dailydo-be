@@ -23,7 +23,7 @@ export class CalendarDayDto {
 /** 캘린더의 한 달. */
 export class CalendarMonthDto {
   @IsInt()
-  @ApiProperty()
+  @ApiProperty({ description: '같은 month 라도 다른 year 충돌 방지용' })
   year: number
 
   @IsInt()

@@ -4,9 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { DataSource, EntityManager, Repository } from 'typeorm'
 
 import { getMissionDate, MEMO_MAX_LENGTH } from '../_shared/cycle'
+
+dayjs.extend(customParseFormat)
 import { DailyMissionItem } from '../daily-mission/daily-mission-item.entity'
 import { DailyMission } from '../daily-mission/daily-mission.entity'
 import { GetMylogsCalendarReqDto } from './dto/req/get-mylogs-calendar.req.dto'
@@ -95,22 +99,19 @@ export class MyLogService {
   }
 
   async getRecordsByDate(userId: number, date: string): Promise<GetMylogsDateResDto> {
-    if (!DATE_REGEX.test(date)) {
+    if (!DATE_REGEX.test(date) || !dayjs(date, 'YYYY-MM-DD', true).isValid()) {
       throw new BadRequestException('invalid_mylog_date')
     }
 
     type RawRow = {
-      recordId: string
-      missionId: string
+      id: string
       categoryId: string
       categoryName: string
       title: string
-      myCompletedCount: string
-      completedAt: Date | null
-      mylogId: string | null
+      completedCount: string
+      createdAt: string
       photo: string | null
       memo: string | null
-      missionDate: string
     }
 
     const raw = await this.dataSource.query<RawRow[]>(
@@ -133,17 +134,14 @@ export class MyLogService {
         WHERE dmi."isCompleted" = true
       )
       SELECT
-        uc."id"::text          AS "recordId",
-        uc."missionId"::text   AS "missionId",
+        uc."id"::text          AS "id",
         m."categoryId"::text   AS "categoryId",
         mc."name"              AS "categoryName",
         m."title"              AS "title",
-        uc."rn"::text          AS "myCompletedCount",
-        uc."completedAt"       AS "completedAt",
-        ml."id"::text          AS "mylogId",
+        uc."rn"::text          AS "completedCount",
+        to_char(uc."completedAt" AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD"T"HH24:MI:SS') || '+09:00' AS "createdAt",
         ml."photoUrl"          AS "photo",
-        ml."memo"              AS "memo",
-        to_char(uc."missionDate", 'YYYY-MM-DD') AS "missionDate"
+        ml."memo"              AS "memo"
       FROM user_completed uc
       JOIN "Mission" m            ON m."id" = uc."missionId"
       LEFT JOIN "MissionCategory" mc ON mc."id" = m."categoryId"
@@ -157,16 +155,14 @@ export class MyLogService {
     )
 
     const records: MylogDateRecordDto[] = raw.map((r) => ({
-      recordId: Number(r.recordId),
-      missionId: Number(r.missionId),
+      id: r.id,
       categoryId: Number(r.categoryId),
       categoryName: r.categoryName ?? '',
+      completedCount: Number(r.completedCount),
       title: r.title,
-      myCompletedCount: Number(r.myCompletedCount),
-      completedAt: r.completedAt,
-      mylog: r.mylogId
-        ? { id: Number(r.mylogId), photo: r.photo ?? null, memo: r.memo ?? null }
-        : null,
+      photo: r.photo ?? null,
+      createdAt: r.createdAt,
+      memo: r.memo ?? null,
     }))
 
     return new GetMylogsDateResDto({ records })
@@ -227,7 +223,7 @@ export class MyLogService {
 
       await qr.commitTransaction()
       return new PatchMylogResDto({
-        id: Number(saved.id),
+        id: String(saved.id),
         photo: saved.photoUrl ?? null,
         memo: saved.memo ?? null,
       })
