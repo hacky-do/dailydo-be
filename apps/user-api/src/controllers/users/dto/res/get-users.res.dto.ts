@@ -1,26 +1,63 @@
 import { User, UserSetting } from '@data/domain'
-import { UserAccountType } from '@data/domain/user'
-import { OmitType } from '@nestjs/swagger'
+import { GetUserCategoriesResDto, UserAccountType } from '@data/domain/user'
+import { ApiProperty, OmitType } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsEnum, IsObject, ValidateNested } from 'class-validator'
-
-enum GetAuthResDtoAccountType {
-  email = 'email',
-  facebook = 'facebook',
-  naver = 'naver',
-  kakao = 'kakao',
-  apple = 'apple',
-  google = 'google'
-}
+import { IsEnum, IsNumber, IsObject, ValidateNested } from 'class-validator'
 
 export class GetAuthResDtoSetting extends OmitType(UserSetting, ['user', 'updatedAt']) {}
 
-export class GetUsersResDto extends OmitType(User, ['accounts', 'setting']) {
+export class GetUsersResDtoTodayMissionCompletion {
+  @IsNumber()
+  @ApiProperty()
+  totalCount: number
+
+  @IsNumber()
+  @ApiProperty()
+  completedCount: number
+
+  @IsNumber()
+  @ApiProperty()
+  completionRate: number
+}
+
+export class GetUsersResDtoFootprint {
+  @IsNumber()
+  @ApiProperty()
+  daysSinceSignup: number
+
+  @IsNumber()
+  @ApiProperty()
+  maxConsecutiveUseDays: number
+
+  @IsNumber()
+  @ApiProperty()
+  completedMissionCount: number
+}
+
+export class GetUsersResDto extends OmitType(User, ['accounts', 'setting', 'missionCategories']) {
   @IsObject()
   @ValidateNested()
   @Type(() => GetAuthResDtoSetting)
   setting: GetAuthResDtoSetting
 
   @IsEnum(UserAccountType, { each: true })
-  accounts: GetAuthResDtoAccountType[]
+  accounts: UserAccountType[]
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => GetUsersResDtoTodayMissionCompletion)
+  @ApiProperty({ type: GetUsersResDtoTodayMissionCompletion })
+  todayMissionCompletion: GetUsersResDtoTodayMissionCompletion
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => GetUsersResDtoFootprint)
+  @ApiProperty({ type: GetUsersResDtoFootprint })
+  footprint: GetUsersResDtoFootprint
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => GetUserCategoriesResDto)
+  @ApiProperty({ type: GetUserCategoriesResDto })
+  categories: GetUserCategoriesResDto
 }

@@ -3,6 +3,7 @@ export { User } from './user/entities/user.entity'
 export { UserPassword } from './user/entities/user-password.entity'
 export { UserAccount } from './user/entities/user-account.entity'
 export { UserSetting } from './user/entities/user-setting.entity'
+export { UserMissionCategory } from './user/entities/user-mission-category.entity'
 export { Verification } from './verification/verification.entity'
 
 export { MissionCategory } from './mission-category/mission-category.entity'

@@ -1,8 +1,3 @@
-export enum UserGender {
-  male = 'male',
-  female = 'female'
-}
-
 export enum UserAccountType {
   email = 'email',
   phone = 'phone',

@@ -84,12 +84,14 @@ export class SocialService implements OnApplicationBootstrap {
       const { token } = await fastify[oauth2Option.name].getAccessTokenFromAuthorizationCodeFlow(req)
       const providerToken = provider === 'google' ? token.id_token || token.access_token : token.access_token
       const account = await this.getAccountIdFromToken(provider, providerToken)
+      if (!account?.id) {
+        throw new Error('Invalid social account')
+      }
 
       const resUser = {
         email: account.email,
         name: account.name,
-        gender: account.gender,
-        birthday: account.birthday
+        profileImage: account.profileImage
       }
       const exp = Math.floor(Date.now() / 1000) + SocialService.TOKEN_EXPIRE_TIME
       const resToken = await this.jwtService.createToken({
@@ -108,7 +110,9 @@ export class SocialService implements OnApplicationBootstrap {
   async getAccountIdFromToken(
     type: Provider,
     token: string
-  ): Promise<{ id: string; name?: string; email?: string; gender?: string; birthday?: string } | undefined> {
+  ): Promise<
+    { id: string; name?: string; email?: string; profileImage?: string } | undefined
+  > {
     if (!this.options[type]) {
       return
     }

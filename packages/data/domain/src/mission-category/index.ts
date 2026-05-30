@@ -1,1 +1,7 @@
 export { MissionCategory } from './mission-category.entity'
+export { MissionCategoryService } from './mission-category.service'
+export { GetMissionCategoriesReqDto } from './dto/req/get-mission-categories.req.dto'
+export { PatchMissionCategoryReqDto } from './dto/req/patch-mission-category.req.dto'
+export { PostMissionCategoryReqDto } from './dto/req/post-mission-category.req.dto'
+export { GetMissionCategoriesResDto, MissionCategoryItemDto } from './dto/res/get-mission-category.res.dto'
+export { PostMissionCategoryResDto } from './dto/res/post-mission-category.res.dto'

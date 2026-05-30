@@ -3,6 +3,20 @@ import { InternalServerErrorException } from '@nestjs/common'
 import { HttpException } from '@nestjs/common/exceptions/http.exception'
 import type { FastifyOAuth2Options } from '@fastify/oauth2'
 
+type NaverAccountResponse = {
+  id?: string
+  name?: string
+  email?: string
+  profile_image?: string
+}
+
+type NaverAccount = {
+  id: string
+  name?: string
+  email?: string
+  profileImage?: string
+}
+
 function getOauth2Options(options?: {
   clientId: string
   clientSecret: string
@@ -11,7 +25,7 @@ function getOauth2Options(options?: {
   service_terms?: string[]
 }): FastifyOAuth2Options | null {
   if (!options) return null
-  const { clientId, clientSecret, callbackUri, scope = ['email', 'name'] } = options
+  const { clientId, clientSecret, callbackUri, scope = ['email', 'name', 'profile_image'] } = options
   const callbackUriParams: Record<string, string> = {}
 
   return {
@@ -56,13 +70,21 @@ function errorHandler(error: any) {
   return new InternalServerErrorException(error.response.data)
 }
 
-async function getMe(accessToken: string): Promise<any> {
+async function getMe(accessToken: string): Promise<NaverAccount | undefined> {
   try {
     const { data } = await urlRequest({
       url: 'https://openapi.naver.com/v1/nid/me',
       headers: { Authorization: `Bearer ${accessToken}` }
     })
-    return data.response
+    const account = data.response as NaverAccountResponse | undefined
+    if (!account?.id) return
+
+    return {
+      id: account.id,
+      name: account.name ?? undefined,
+      email: account.email ?? undefined,
+      profileImage: account.profile_image ?? undefined
+    }
   } catch (e) {
     throw errorHandler(e)
   }

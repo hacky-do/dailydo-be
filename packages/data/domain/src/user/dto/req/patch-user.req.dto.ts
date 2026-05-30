@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsEnum, IsOptional, IsString, IsUrl, Matches } from 'class-validator'
-import { UserGender } from '../../user.type'
+import { IsBoolean, IsOptional, IsString, IsUrl, Matches } from 'class-validator'
 import { regex } from '@data/lib'
 
 export class PatchUserReqDto {
@@ -10,14 +9,9 @@ export class PatchUserReqDto {
   name?: string
 
   @IsOptional()
-  @IsEnum(UserGender)
-  @ApiPropertyOptional({ enum: UserGender })
-  gender?: UserGender
-
-  @IsOptional()
-  @Matches(regex.date)
+  @IsString()
   @ApiPropertyOptional()
-  birth?: string
+  description?: string
 
   @IsOptional()
   @IsUrl()
@@ -28,4 +22,9 @@ export class PatchUserReqDto {
   @Matches(regex.phone)
   @ApiPropertyOptional({ pattern: regex.phone.source })
   phone?: string
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional()
+  agreeMarketing?: boolean
 }

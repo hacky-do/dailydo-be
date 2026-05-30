@@ -34,7 +34,8 @@ export class AuthService {
     socialToken?: string
     password?: string
     name?: string
-    brith?: string
+    profileImage?: string
+    description?: string
     agreeMarketing: boolean
   }) {
     const { type, email, phone, codeToken, socialToken, password, agreeMarketing, ...rest } = options

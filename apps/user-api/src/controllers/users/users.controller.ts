@@ -1,7 +1,8 @@
-import { UserService } from '@data/domain/user'
+import { PatchUserReqDto, UserService } from '@data/domain/user'
 import { Auth, User } from '@data/decorators'
-import { Controller, Get, ParseIntPipe } from '@nestjs/common'
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { IdParamsDto } from '@data/dto'
+import { Body, Controller, Get, ParseIntPipe, Patch } from '@nestjs/common'
+import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { GetUsersResDto } from './dto/res/get-users.res.dto'
 
 @Auth({ type: 'user' })
@@ -12,17 +13,19 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: '회원 정보 조회' })
-  @ApiResponse({ status: 200, type: GetUsersResDto })
+  @ApiOkResponse({ type: GetUsersResDto })
+  @ApiNotFoundResponse({ description: 'not_found_user' })
   async get(@User('id', ParseIntPipe) userId: number): Promise<GetUsersResDto> {
     return await this.usersService.findOne(userId)
   }
 
-  // @Patch()
-  // @ApiOperation({summary: '회원 정보 수정'})
-  // @ApiResponse({status: 200, type: IdParamsDto})
-  // update(@User('id', ParseIntPipe) userId: number, @Body() data: PatchUserReqDto): Promise<IdParamsDto> {
-  //   return this.usersService.update(userId, data)
-  // }
+  @Patch()
+  @ApiOperation({ summary: '회원 정보 수정' })
+  @ApiOkResponse({ type: IdParamsDto })
+  @ApiNotFoundResponse({ description: 'not_found_user' })
+  update(@User('id', ParseIntPipe) userId: number, @Body() data: PatchUserReqDto): Promise<IdParamsDto> {
+    return this.usersService.update(userId, data)
+  }
   //
   // @Delete()
   // @HttpCode(204)

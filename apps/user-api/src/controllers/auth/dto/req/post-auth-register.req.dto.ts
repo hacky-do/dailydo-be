@@ -12,7 +12,7 @@ export enum PostAuthRegisterReqDtoType {
   facebook = 'facebook'
 }
 
-export class PostAuthRegisterReqDto extends PickType(User, ['name', 'email']) {
+export class PostAuthRegisterReqDto extends PickType(User, ['name', 'email', 'profileImage', 'description']) {
   @IsEnum(PostAuthRegisterReqDtoType)
   type: PostAuthRegisterReqDtoType
 

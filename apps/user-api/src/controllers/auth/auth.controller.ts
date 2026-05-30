@@ -158,13 +158,13 @@ export class AuthController {
     throw new UnauthorizedException('invalid_refresh_token')
   }
 
-  @Put('password')
-  @Auth({ type: 'user' })
-  @ApiOperation({ summary: '비밀번호 변경' })
-  @ApiResponse({ status: 200, type: PostAuthResDto })
-  async putAuthPassword(@User('id') userId: number, @Body() data: PutAuthPasswordReqDto): Promise<PostAuthResDto> {
-    return this.authService.changePassword({ ...data, userId })
-  }
+  // @Put('password')
+  // @Auth({ type: 'user' })
+  // @ApiOperation({ summary: '비밀번호 변경' })
+  // @ApiResponse({ status: 200, type: PostAuthResDto })
+  // async putAuthPassword(@User('id') userId: number, @Body() data: PutAuthPasswordReqDto): Promise<PostAuthResDto> {
+  //   return this.authService.changePassword({ ...data, userId })
+  // }
 
   @Public()
   @Delete()

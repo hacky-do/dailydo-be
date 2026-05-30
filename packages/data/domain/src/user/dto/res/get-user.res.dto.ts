@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { UserAccountType, UserGender } from '../../user.type'
+import { UserAccountType } from '../../user.type'
 
 export class GetUserResDto {
   @ApiProperty()
@@ -11,14 +11,11 @@ export class GetUserResDto {
   @ApiProperty()
   name: string
 
-  @ApiProperty({ enum: UserGender, required: false, nullable: true })
-  gender?: UserGender
+  @ApiProperty({ required: false, nullable: true })
+  description?: string
 
   @ApiProperty({ required: false, nullable: true })
   profileImage?: string
-
-  @ApiProperty({ required: false, nullable: true })
-  birth?: string
 
   @ApiProperty({ required: false, nullable: true })
   phone?: string

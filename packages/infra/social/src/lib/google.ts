@@ -31,11 +31,14 @@ async function getMe(code: string, clientId: string) {
       audience: clientId
     })
     const payload = ticket.getPayload()
-    const id = payload['sub']
+    const id = payload?.sub
+    if (!id) return
+
     return {
       id,
-      name: payload.name,
-      email: payload.email
+      name: payload?.name,
+      email: payload?.email,
+      profileImage: payload?.picture
     }
   } catch (e) {
     throw new Error(e)
