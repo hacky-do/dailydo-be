@@ -27,7 +27,7 @@ export class MissionsController {
   @ApiOperation({
     summary: '미션 도착 — 무저장 후보 10개 노출',
     description:
-      '회원은 dailySeed 로 deterministic 10개 (하루 1번), 이미 확정한 경우 status=CONFIRMED 만. 비회원은 isGuest:true + 고정 10개.',
+      '회원은 dailySeed 로 deterministic 10개 (하루 1번), 이미 확정한 경우 status=CONFIRMED. 비회원은 isGuest:true + 고정 10개.',
   })
   @ApiOkResponse({ type: GetNewMissionsResDto })
   async getNew(@User('id') userId?: number): Promise<GetNewMissionsResDto> {
