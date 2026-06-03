@@ -26,6 +26,7 @@ export class AuthService {
     private readonly userService: UserService
   ) {}
 
+  // doc
   async register(options: {
     type: string
     email?: string
