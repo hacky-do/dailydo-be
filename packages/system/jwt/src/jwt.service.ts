@@ -35,7 +35,7 @@ export class JwtService {
   async refreshToken(
     oldRefreshToken: string,
     aud: string,
-    expireMilliseconds: number,
+    expireSeconds: number,
     options?: SignOptions
   ): Promise<string> {
     const cacheKey = `refreshProcessing:${oldRefreshToken}`
@@ -56,7 +56,7 @@ export class JwtService {
       }
       const { iat, exp, ...payload } = await this.validateRefreshToken(oldRefreshToken, aud)
       await this.invalidateRefreshToken(oldRefreshToken, payload.sub, aud)
-      const refreshToken = await this.createRefreshToken(payload, expireMilliseconds, options)
+      const refreshToken = await this.createRefreshToken(payload, expireSeconds, options)
       await this.redis.setex(cacheKey, 5, refreshToken)
       return refreshToken
     } catch (error) {
@@ -68,9 +68,9 @@ export class JwtService {
     }
   }
 
-  async createRefreshToken(payload: Record<string, any>, expireMilliseconds: number, options: SignOptions = {}) {
-    const refreshToken = await this.createToken(payload, { ...options, expiresIn: expireMilliseconds })
-    await this.storeRefreshToken(refreshToken, payload.sub, payload.aud, expireMilliseconds)
+  async createRefreshToken(payload: Record<string, any>, expireSeconds: number, options: SignOptions = {}) {
+    const refreshToken = await this.createToken(payload, { ...options, expiresIn: expireSeconds })
+    await this.storeRefreshToken(refreshToken, payload.sub, payload.aud, expireSeconds)
     return refreshToken
   }
 
@@ -107,7 +107,8 @@ export class JwtService {
   private async validateRefreshToken(oldRefreshToken: string, aud: string) {
     try {
       const payload = await this.verifyToken(oldRefreshToken, { audience: aud })
-      const tokenExists = await this.redis.sismember(this.getUserRefreshTokenKey(aud, payload.sub), oldRefreshToken)
+      const tokens = await this.redis.lrange(this.getUserRefreshTokenKey(aud, payload.sub), 0, -1)
+      const tokenExists = tokens.includes(oldRefreshToken)
       if (!tokenExists) {
         throw new Error('Not found refresh token')
       }
@@ -118,8 +119,9 @@ export class JwtService {
     }
   }
 
-  private async storeRefreshToken(token: string, sub: string, aud: string, expireMilliseconds: number) {
+  private async storeRefreshToken(token: string, sub: string, aud: string, expireSeconds: number) {
     if (!sub || !aud) return
+    const expireMilliseconds = expireSeconds * 1000
     const tokenMeta = JSON.stringify({
       token,
       userId: sub,

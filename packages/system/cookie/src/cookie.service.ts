@@ -26,7 +26,7 @@ export class CookieService {
       domain,
       sameSite: 'strict',
       httpOnly: true,
-      maxAge: maxAge
+      maxAge: Math.floor(maxAge / 1000)
     })
   }
 

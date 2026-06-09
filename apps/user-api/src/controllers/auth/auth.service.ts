@@ -259,7 +259,7 @@ export class AuthService {
     const refreshToken = await this.jwtService.refreshToken(
       oldRefreshToken,
       JwtStrategy.AUDIENCE,
-      JwtStrategy.EXPIRE_IN_ACCESS_TOKEN
+      JwtStrategy.EXPIRE_IN_REFRESH_TOKEN / 1000
     )
     const { sub } = this.jwtService.decodeToken(refreshToken)
     const accessTokenInfo = await this.createAccessToken(sub)
