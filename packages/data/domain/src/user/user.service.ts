@@ -124,11 +124,12 @@ export class UserService {
             where: { id: In(categoryIds) }
           })
         : []
-    const categoryNameById = new Map(categories.map((category) => [category.id, category.name]))
+    const categoryById = new Map(categories.map((category) => [category.id, category]))
     const data = userCategories.map((userCategory) => ({
       id: Number(userCategory.id),
       categoryId: Number(userCategory.categoryId),
-      name: categoryNameById.get(userCategory.categoryId),
+      name: categoryById.get(userCategory.categoryId)?.name,
+      image: categoryById.get(userCategory.categoryId)?.image,
       sortOrder: userCategory.sortOrder,
       createdAt: userCategory.createdAt,
       updatedAt: userCategory.updatedAt
