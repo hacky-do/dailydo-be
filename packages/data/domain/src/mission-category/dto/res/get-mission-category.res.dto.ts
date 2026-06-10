@@ -3,7 +3,7 @@ import { ApiProperty, PickType } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsArray, IsInt, ValidateNested } from 'class-validator'
 
-export class MissionCategoryItemDto extends PickType(MissionCategory, ['id', 'name']) {}
+export class MissionCategoryItemDto extends PickType(MissionCategory, ['id', 'name', 'image']) {}
 
 export class GetMissionCategoriesResDto {
   @IsArray()

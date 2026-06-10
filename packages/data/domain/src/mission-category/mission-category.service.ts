@@ -16,7 +16,7 @@ export class MissionCategoryService {
   ) {}
 
   async findAll(options: GetMissionCategoriesReqDto): Promise<GetMissionCategoriesResDto> {
-    const query = this.missionCategoryRepo.createQueryBuilder('mc').select(['mc.id', 'mc.name'])
+    const query = this.missionCategoryRepo.createQueryBuilder('mc').select(['mc.id', 'mc.name', 'mc.image'])
 
     if (options.sort && options.order) {
       query.orderBy(`mc.${options.sort}`, options.order)
@@ -27,7 +27,8 @@ export class MissionCategoryService {
     const [categories, total] = await query.skip(options.start).take(options.perPage).getManyAndCount()
     const data = categories.map((category) => ({
       id: Number(category.id),
-      name: category.name
+      name: category.name,
+      image: category.image
     }))
 
     return { data, total }
@@ -36,21 +37,23 @@ export class MissionCategoryService {
   async findOne(id: number): Promise<MissionCategoryItemDto> {
     const data = await this.missionCategoryRepo
       .createQueryBuilder('mc')
-      .select(['mc.id', 'mc.name'])
+      .select(['mc.id', 'mc.name', 'mc.image'])
       .where('mc."id" = :id', { id })
       .getOne()
 
     if (!data) throw new NotFoundException('not_found_category')
     return {
       id: Number(data.id),
-      name: data.name
+      name: data.name,
+      image: data.image
     }
   }
 
   async create(options: PostMissionCategoryReqDto): Promise<PostMissionCategoryResDto> {
     try {
       const missionCategory = new MissionCategory({
-        name: options.name
+        name: options.name,
+        image: options.image
       })
       const saved = await this.missionCategoryRepo.save(missionCategory)
       return { id: Number(saved.id) }
@@ -68,6 +71,9 @@ export class MissionCategoryService {
 
     if (options.name !== undefined) {
       missionCategory.name = options.name
+    }
+    if (options.image !== undefined) {
+      missionCategory.image = options.image
     }
 
     try {

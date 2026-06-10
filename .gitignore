@@ -127,6 +127,9 @@ dist/
 /elb.zip
 .turbo
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # key files
 *.pem
 *.key
