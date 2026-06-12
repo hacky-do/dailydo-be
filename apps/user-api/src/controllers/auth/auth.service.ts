@@ -1,9 +1,17 @@
-import { User, UserAccount, UserPassword, UserSetting, Verification } from '@data/domain'
+import {
+  MissionCategory,
+  User,
+  UserAccount,
+  UserMissionCategory,
+  UserPassword,
+  UserSetting,
+  Verification
+} from '@data/domain'
 import { UserAccountType, UserService } from '@data/domain/user'
 import { VERIFICATION_AUDIENCE } from '@data/domain/verification'
 import { createPasswordHash, passwordIterations, verifyPassword } from '@data/lib'
 import { SocialService } from '@infra/social'
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@system/jwt'
 import { DataSource, Repository } from 'typeorm'
@@ -11,6 +19,8 @@ import { JwtStrategy } from '../../strategies/jwt.strategy'
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
   constructor(
     private readonly dataSource: DataSource,
     private readonly jwtService: JwtService,
@@ -96,16 +106,34 @@ export class AuthService {
       const setting = new UserSetting({ user, agreeMarketing })
       await queryRunner.manager.save(setting)
       await queryRunner.commitTransaction()
+      this.createDefaultUserMissionCategories(user.id).catch((error) => {
+        this.logger.error(`Failed to create default mission categories for user ${user.id}`, error.stack)
+      })
       return this.generateToken(user.id.toString())
     } catch (e) {
       await queryRunner.rollbackTransaction()
-      if (e.code === 'ER_DUP_ENTRY') {
+      if (e.code === '23505' || e.code === 'ER_DUP_ENTRY') {
         throw new ConflictException('duplicate')
       }
       throw e
     } finally {
       await queryRunner.release()
     }
+  }
+
+  private async createDefaultUserMissionCategories(userId: number): Promise<void> {
+    const categories = await this.dataSource.manager.find(MissionCategory, { order: { id: 'ASC' } })
+    if (categories.length === 0) return
+
+    const userCategories = categories.map(
+      (category, index) =>
+        new UserMissionCategory({
+          userId,
+          categoryId: category.id,
+          sortOrder: index
+        })
+    )
+    await this.dataSource.manager.save(UserMissionCategory, userCategories)
   }
 
   async validateUserByEmail(email: string, password: string) {
