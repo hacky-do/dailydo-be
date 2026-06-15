@@ -66,20 +66,14 @@ export class UserCategoryService {
     }
   }
 
-  async updateMyCategory(userId: number, id: number, options: { categoryId?: number; sortOrder?: number }) {
+  async updateMyCategory(userId: number, id: number, options: { categoryId: number; sortOrder?: number }) {
     const existingUserCategory = await this.userCategoryRepo.findOne({ where: { id, userId } })
     if (!existingUserCategory) throw new NotFoundException('not_found_user_category')
 
-    if (options.categoryId !== undefined) {
-      await this.assertCategoryExists(options.categoryId)
-    }
+    await this.assertCategoryExists(options.categoryId)
 
-    if (options.categoryId !== undefined) {
-      existingUserCategory.categoryId = options.categoryId
-    }
-    if (options.sortOrder !== undefined) {
-      existingUserCategory.sortOrder = options.sortOrder
-    }
+    existingUserCategory.categoryId = options.categoryId
+    existingUserCategory.sortOrder = options.sortOrder ?? 0
 
     try {
       const saved = await this.userCategoryRepo.save(existingUserCategory)

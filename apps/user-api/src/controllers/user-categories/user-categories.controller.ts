@@ -1,14 +1,14 @@
 import {
   GetUserCategoriesResDto,
   GetUserCategoriesReqDto,
-  PatchUserCategoryReqDto,
+  PutUserCategoryReqDto,
   PostUserCategoryReqDto,
   PostUserCategoryResDto,
   UserCategoryService
 } from '@data/domain/user'
 import { Auth, User } from '@data/decorators'
 import { IdParamsDto } from '@data/dto'
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common'
 import {
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -47,7 +47,7 @@ export class UserCategoriesController {
     return this.userCategoryService.createMyCategory(userId, data)
   }
 
-  @Patch('users/categories/:id')
+  @Put('users/categories/:id')
   @ApiOperation({ summary: '나의 카테고리 수정' })
   @ApiOkResponse({ type: IdParamsDto })
   @ApiNotFoundResponse({ description: 'not_found_user_category / not_found_category' })
@@ -55,7 +55,7 @@ export class UserCategoriesController {
   updateMyCategory(
     @User('id', ParseIntPipe) userId: number,
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: PatchUserCategoryReqDto
+    @Body() data: PutUserCategoryReqDto
   ): Promise<IdParamsDto> {
     return this.userCategoryService.updateMyCategory(userId, id, data)
   }
