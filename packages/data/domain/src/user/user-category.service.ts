@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
 import { MissionCategory } from '../mission-category/mission-category.entity'
@@ -48,42 +48,40 @@ export class UserCategoryService {
     return { data, total }
   }
 
-  async createMyCategory(userId: number, options: { categoryId: number; sortOrder?: number }) {
-    await this.assertCategoryExists(options.categoryId)
-    try {
-      const userCategory = new UserMissionCategory({
-        userId,
-        categoryId: options.categoryId,
-        sortOrder: options.sortOrder ?? 0
+  async updateMyCategories(userId: number, categoryIds: number[]) {
+    const uniqueIds = [...new Set(categoryIds.map(Number))]
+
+    // 각 categoryId를 DB로 검증 → 유효하지 않으면 400
+    const categories = await this.categoryRepo.find({ where: { id: In(uniqueIds) } })
+    const validIds = new Set(categories.map((category) => Number(category.id)))
+    const invalidIds = uniqueIds.filter((id) => !validIds.has(id))
+    if (invalidIds.length > 0) {
+      throw new BadRequestException(`invalid_category: ${invalidIds.join(',')}`)
+    }
+
+    // 사용자의 미션 카테고리 집합을 categoryIds로 전체 교체 (배열 순서 = sortOrder)
+    await this.userCategoryRepo.manager.transaction(async (manager) => {
+      const existing = await manager.find(UserMissionCategory, { where: { userId } })
+      const existingByCategoryId = new Map(existing.map((uc) => [Number(uc.categoryId), uc]))
+      const desired = new Set(uniqueIds)
+
+      const toDelete = existing.filter((uc) => !desired.has(Number(uc.categoryId)))
+      if (toDelete.length > 0) {
+        await manager.delete(UserMissionCategory, { id: In(toDelete.map((uc) => uc.id)) })
+      }
+
+      const rows = uniqueIds.map((categoryId, index) => {
+        const found = existingByCategoryId.get(categoryId)
+        if (found) {
+          found.sortOrder = index
+          return found
+        }
+        return new UserMissionCategory({ userId, categoryId, sortOrder: index })
       })
-      const saved = await this.userCategoryRepo.save(userCategory)
-      return { id: Number(saved.id) }
-    } catch (e) {
-      if (e.code === '23505' || e.code === 'ER_DUP_ENTRY') {
-        throw new ConflictException('duplicate_category')
-      }
-      throw e
-    }
-  }
+      await manager.save(UserMissionCategory, rows)
+    })
 
-  async updateMyCategory(userId: number, id: number, options: { categoryId: number; sortOrder?: number }) {
-    const existingUserCategory = await this.userCategoryRepo.findOne({ where: { id, userId } })
-    if (!existingUserCategory) throw new NotFoundException('not_found_user_category')
-
-    await this.assertCategoryExists(options.categoryId)
-
-    existingUserCategory.categoryId = options.categoryId
-    existingUserCategory.sortOrder = options.sortOrder ?? 0
-
-    try {
-      const saved = await this.userCategoryRepo.save(existingUserCategory)
-      return { id: Number(saved.id) }
-    } catch (e) {
-      if (e.code === '23505' || e.code === 'ER_DUP_ENTRY') {
-        throw new ConflictException('duplicate_category')
-      }
-      throw e
-    }
+    return { categoryIds: uniqueIds }
   }
 
   async deleteMyCategory(userId: number, id: number) {
@@ -91,10 +89,5 @@ export class UserCategoryService {
     if ((result.affected ?? 0) === 0) {
       throw new NotFoundException('not_found_user_category')
     }
-  }
-
-  private async assertCategoryExists(categoryId: number) {
-    const category = await this.categoryRepo.findOne({ where: { id: categoryId } })
-    if (!category) throw new NotFoundException('not_found_category')
   }
 }

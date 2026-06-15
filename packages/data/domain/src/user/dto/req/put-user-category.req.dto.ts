@@ -1,3 +1,12 @@
-import { PostUserCategoryReqDto } from './post-user-category.req.dto'
+import { ApiProperty } from '@nestjs/swagger'
+import { Type } from 'class-transformer'
+import { ArrayNotEmpty, IsArray, IsInt } from 'class-validator'
 
-export class PutUserCategoryReqDto extends PostUserCategoryReqDto {}
+export class PutUserCategoryReqDto {
+  @ApiProperty({ title: '카테고리 ID 목록 (정렬 순서대로)', type: [Number], format: 'int64', isArray: true })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  @Type(() => Number)
+  categoryIds: number[]
+}

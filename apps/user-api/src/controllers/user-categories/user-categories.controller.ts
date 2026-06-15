@@ -2,16 +2,12 @@ import {
   GetUserCategoriesResDto,
   GetUserCategoriesReqDto,
   PutUserCategoryReqDto,
-  PostUserCategoryReqDto,
-  PostUserCategoryResDto,
   UserCategoryService
 } from '@data/domain/user'
 import { Auth, User } from '@data/decorators'
-import { IdParamsDto } from '@data/dto'
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Put, Query } from '@nestjs/common'
 import {
-  ApiConflictResponse,
-  ApiCreatedResponse,
+  ApiBadRequestResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -35,29 +31,15 @@ export class UserCategoriesController {
     return this.userCategoryService.getMyCategories(userId, params)
   }
 
-  @Post('users/categories')
-  @ApiOperation({ summary: '나의 카테고리 생성' })
-  @ApiCreatedResponse({ type: PostUserCategoryResDto })
-  @ApiNotFoundResponse({ description: 'not_found_category' })
-  @ApiConflictResponse({ description: 'duplicate_category' })
-  createMyCategory(
+  @Put('users/categories')
+  @ApiOperation({ summary: '나의 카테고리 설정 (전체 교체)' })
+  @ApiOkResponse({ schema: { properties: { categoryIds: { type: 'array', items: { type: 'number' } } } } })
+  @ApiBadRequestResponse({ description: 'invalid_category' })
+  updateMyCategories(
     @User('id', ParseIntPipe) userId: number,
-    @Body() data: PostUserCategoryReqDto
-  ): Promise<PostUserCategoryResDto> {
-    return this.userCategoryService.createMyCategory(userId, data)
-  }
-
-  @Put('users/categories/:id')
-  @ApiOperation({ summary: '나의 카테고리 수정' })
-  @ApiOkResponse({ type: IdParamsDto })
-  @ApiNotFoundResponse({ description: 'not_found_user_category / not_found_category' })
-  @ApiConflictResponse({ description: 'duplicate_category' })
-  updateMyCategory(
-    @User('id', ParseIntPipe) userId: number,
-    @Param('id', ParseIntPipe) id: number,
     @Body() data: PutUserCategoryReqDto
-  ): Promise<IdParamsDto> {
-    return this.userCategoryService.updateMyCategory(userId, id, data)
+  ): Promise<{ categoryIds: number[] }> {
+    return this.userCategoryService.updateMyCategories(userId, data.categoryIds)
   }
 
   @Delete('users/categories/:id')
