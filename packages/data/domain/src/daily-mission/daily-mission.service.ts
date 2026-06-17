@@ -16,6 +16,7 @@ import {
   MIN_SELECTABLE,
   MissionType,
 } from '../_shared/cycle'
+import { CollectionService } from '../collection/collection.service'
 import { MissionCategory } from '../mission-category/mission-category.entity'
 import { Mission } from '../mission/mission.entity'
 import { MissionService } from '../mission/mission.service'
@@ -41,6 +42,7 @@ export class DailyMissionService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly missionService: MissionService,
+    private readonly collectionService: CollectionService,
   ) {}
 
   async getNewMissions(userId: number | null): Promise<GetNewMissionsResDto> {
@@ -318,6 +320,9 @@ export class DailyMissionService {
                  "updatedAt" = now()`,
           [userId, item.missionId, now],
         )
+
+        // 컬렉션 해금: 방금 완료로 requirement 충족된 컬렉션을 같은 트랜잭션에서 INSERT (멱등)
+        await this.collectionService.unlockEligible(qr.manager, userId, item.missionId)
       }
 
       let savedLog: MyLog | null = null

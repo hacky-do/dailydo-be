@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { AuthHttpModule } from './auth/auth-http.module'
+import { CollectionsHttpModule } from './collections/collections-http.module'
 import { FilesHttpModule } from './files/files-http.module'
 import { MissionCategoriesHttpModule } from './mission-categories/mission-categories-http.module'
 import { MissionsHttpModule } from './missions/missions-http.module'
@@ -18,9 +19,10 @@ import { VerificationsHttpModule } from './verifications/verifications-http.modu
     MissionCategoriesHttpModule,
     // NotificationsHttpModule,
     FilesHttpModule,
+    CollectionsHttpModule,
     MissionsHttpModule,
-    MylogsHttpModule,
+    MylogsHttpModule
   ],
-  controllers: [],
+  controllers: []
 })
 export class UserHttpModule {}

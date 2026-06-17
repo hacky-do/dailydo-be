@@ -12,6 +12,11 @@ export { UserMissionStat } from './mission/user-mission-stat.entity'
 export { DailyMission } from './daily-mission/daily-mission.entity'
 export { DailyMissionItem } from './daily-mission/daily-mission-item.entity'
 export { MyLog } from './my-log/my-log.entity'
+export { Collection } from './collection/collection.entity'
+export { CollectionRequirement } from './collection/collection-requirement.entity'
+export { UserCollection } from './collection/user-collection.entity'
+export { CollectionGroup } from './collection/collection-group.entity'
+export { CollectionGroupItem } from './collection/collection-group-item.entity'
 
 export {
   CANDIDATE_COUNT,
@@ -25,6 +30,6 @@ export {
   MYLOG_ALLOWED_MIME,
   MYLOG_IMAGE_MAX_BYTES,
   sampleCandidates,
-  SPECIAL_PROBABILITY,
+  SPECIAL_PROBABILITY
 } from './_shared/cycle'
 export type { SampleableMission } from './_shared/cycle'

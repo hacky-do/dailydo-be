@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { MissionCategory } from '../mission-category/mission-category.entity'
+import { CollectionModule } from '../collection/collection.module'
 import { MissionModule } from '../mission/mission.module'
 import { MyLog } from '../my-log/my-log.entity'
 import { DailyMissionItem } from './daily-mission-item.entity'
@@ -12,6 +13,7 @@ import { DailyMissionService } from './daily-mission.service'
   imports: [
     TypeOrmModule.forFeature([DailyMission, DailyMissionItem, MissionCategory, MyLog]),
     MissionModule,
+    CollectionModule,
   ],
   providers: [DailyMissionService],
   exports: [TypeOrmModule, DailyMissionService],
