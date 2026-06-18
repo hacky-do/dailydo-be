@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsInt, IsOptional, IsUrl, Length } from 'class-validator'
+import { IsInt, IsOptional, IsString, Length } from 'class-validator'
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity({ name: 'MissionCategory' })
@@ -14,10 +14,10 @@ export class MissionCategory {
   @Column({ length: 50, unique: true })
   name: string
 
-  @ApiProperty({ title: '카테고리 이미지' })
   @IsOptional()
-  @IsUrl()
-  @Column({ nullable: true })
+  @IsString()
+  @ApiProperty({ title: '카테고리 이미지 URL', required: false })
+  @Column({ length: 500, nullable: true })
   image?: string
 
   @CreateDateColumn({ type: 'timestamptz' })
