@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import {
+  IsArray,
   IsBoolean,
   IsDate,
   IsInt,
@@ -24,6 +25,26 @@ export class CompleteMissionMyLogResDto {
   @IsString()
   @ApiProperty({ nullable: true })
   memo: string | null
+}
+
+/** 이번 미션 완료로 새로 해금된 컬렉션 (마이컬렉션 / 축하 토스트용). */
+export class UnlockedCollectionResDto {
+  @IsString()
+  @ApiProperty({ example: '23' })
+  collectionId: string
+
+  @IsString()
+  @ApiProperty()
+  title: string
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ nullable: true })
+  image: string | null
+
+  @IsString()
+  @ApiProperty()
+  description: string
 }
 
 /**
@@ -60,6 +81,15 @@ export class PostMissionCompleteResDto {
   @Type(() => CompleteMissionMyLogResDto)
   @ApiProperty({ type: CompleteMissionMyLogResDto, nullable: true })
   mylog: CompleteMissionMyLogResDto | null
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UnlockedCollectionResDto)
+  @ApiProperty({
+    type: [UnlockedCollectionResDto],
+    description: '이번 완료로 새로 해금된 컬렉션 (없으면 빈 배열)',
+  })
+  unlockedCollections: UnlockedCollectionResDto[]
 
   constructor(partial: Partial<PostMissionCompleteResDto>) {
     Object.assign(this, partial)

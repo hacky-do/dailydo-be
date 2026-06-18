@@ -32,6 +32,14 @@ interface FeaturedCollectionRow {
   title: string
 }
 
+/** 미션 완료로 새로 해금된 컬렉션 (미션 완료 응답에 실린다). */
+export interface UnlockedCollection {
+  collectionId: string
+  title: string
+  image: string | null
+  description: string
+}
+
 @Injectable()
 export class CollectionService {
   constructor(
@@ -140,10 +148,13 @@ export class CollectionService {
     )
   }
 
-  async unlockEligible(manager: EntityManager, userId: number, missionId: number): Promise<void> {
+  async unlockEligible(manager: EntityManager, userId: number, missionId: number): Promise<UnlockedCollection[]> {
     // 방금 완료한 missionId 를 요구하는 컬렉션만 후보로, 모든 requirement 충족 시 해금.
     // 미션 완료 트랜잭션(manager) 안에서 실행 → 원자적. ON CONFLICT 로 멱등.
-    await manager.query(
+    // 새로 INSERT 된(=이번에 해금된) 컬렉션만 RETURNING → Collection 정보 붙여 반환.
+    const rows = await manager.query<
+      Array<{ collectionId: string; title: string; image: string | null; description: string }>
+    >(
       `WITH candidate AS (
          SELECT DISTINCT "collectionId" FROM "CollectionRequirement" WHERE "missionId" = $2
        ),
@@ -156,12 +167,23 @@ export class CollectionService {
            ON ums."userId" = $1 AND ums."missionId" = cr."missionId"
          GROUP BY cr."collectionId"
          HAVING bool_and(COALESCE(ums."completedCount", 0) >= cr."requiredCount")
+       ),
+       ins AS (
+         INSERT INTO "UserCollection" ("userId", "collectionId", "acquiredAt")
+         SELECT $1, e."collectionId", now() FROM eligible e
+         ON CONFLICT ("userId", "collectionId") DO NOTHING
+         RETURNING "collectionId"
        )
-       INSERT INTO "UserCollection" ("userId", "collectionId", "acquiredAt")
-       SELECT $1, e."collectionId", now() FROM eligible e
-       ON CONFLICT ("userId", "collectionId") DO NOTHING`,
+       SELECT c."id"::text "collectionId", c."title", c."imageUrl" "image", c."description"
+       FROM ins JOIN "Collection" c ON c."id" = ins."collectionId"`,
       [userId, missionId]
     )
+    return rows.map((r) => ({
+      collectionId: r.collectionId,
+      title: r.title,
+      image: r.image ?? null,
+      description: r.description
+    }))
   }
 
   private parseCollectionId(collectionId: string): number {
