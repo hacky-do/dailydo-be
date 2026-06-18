@@ -47,19 +47,20 @@ export class MyLogService {
       query.cursor ?? getMissionDate(new Date()).slice(0, 7)
 
     const rows = await this.dataSource.query<
-      { date: string; count: string }[]
+      { date: string; count: string; total: string }[]
     >(
       `
       SELECT
-        to_char(dm."missionDate", 'YYYY-MM-DD') AS "date",
-        COUNT(*)::text                          AS "count"
+        to_char(dm."missionDate", 'YYYY-MM-DD')                AS "date",
+        COUNT(*) FILTER (WHERE dmi."isCompleted" = true)::text AS "count",
+        COUNT(*)::text                                         AS "total"
       FROM "DailyMissionItem" dmi
       JOIN "DailyMission" dm
         ON dm."id" = dmi."dailyMissionId"
        AND dm."userId" = $1
-      WHERE dmi."isCompleted" = true
-        AND to_char(dm."missionDate", 'YYYY-MM') <= $2
+      WHERE to_char(dm."missionDate", 'YYYY-MM') <= $2
       GROUP BY to_char(dm."missionDate", 'YYYY-MM-DD')
+      HAVING COUNT(*) FILTER (WHERE dmi."isCompleted" = true) > 0
       ORDER BY "date" DESC
       `,
       [userId, startMonth],
@@ -69,7 +70,7 @@ export class MyLogService {
   }
 
   private toCalendarResponse(
-    rows: { date: string; count: string }[],
+    rows: { date: string; count: string; total: string }[],
     limit: number,
   ): GetMylogsCalendarResDto {
     const groups: Record<string, CalendarDayDto[]> = {}
@@ -80,7 +81,7 @@ export class MyLogService {
         groups[ym] = []
         monthOrder.push(ym)
       }
-      groups[ym].push({ date: r.date, count: Number(r.count) })
+      groups[ym].push({ date: r.date, count: Number(r.count), total: Number(r.total) })
     }
 
     const takenMonths = monthOrder.slice(0, limit)

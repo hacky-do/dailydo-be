@@ -18,6 +18,10 @@ export class CalendarDayDto {
   @IsInt()
   @ApiProperty({ description: '해당 날짜 completed item 수 (MyLog 유무 무관, backend-spec §7)' })
   count: number
+
+  @IsInt()
+  @ApiProperty({ description: '해당 날짜 확정(선택) 미션 수' })
+  total: number
 }
 
 /** 캘린더의 한 달. */
