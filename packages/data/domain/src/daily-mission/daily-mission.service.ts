@@ -16,7 +16,7 @@ import {
   MIN_SELECTABLE,
   MissionType,
 } from '../_shared/cycle'
-import { CollectionService } from '../collection/collection.service'
+import { CollectionService, UnlockedCollection } from '../collection/collection.service'
 import { MissionCategory } from '../mission-category/mission-category.entity'
 import { Mission } from '../mission/mission.entity'
 import { MissionService } from '../mission/mission.service'
@@ -307,6 +307,7 @@ export class DailyMissionService {
         { isCompleted: true, completedAt: now },
       )
       const justCompleted = (update.affected ?? 0) > 0
+      let unlockedCollections: UnlockedCollection[] = []
 
       if (justCompleted) {
         await this.missionService.incrementCompletedCount(qr.manager, item.missionId)
@@ -322,7 +323,12 @@ export class DailyMissionService {
         )
 
         // 컬렉션 해금: 방금 완료로 requirement 충족된 컬렉션을 같은 트랜잭션에서 INSERT (멱등)
-        await this.collectionService.unlockEligible(qr.manager, userId, item.missionId)
+        // 새로 해금된 컬렉션을 응답에 실어 프론트가 축하 토스트를 띄울 수 있게 한다.
+        unlockedCollections = await this.collectionService.unlockEligible(
+          qr.manager,
+          userId,
+          item.missionId,
+        )
       }
 
       let savedLog: MyLog | null = null
@@ -340,7 +346,7 @@ export class DailyMissionService {
       }
 
       await qr.commitTransaction()
-      return this.toCompleteResDto(qr.manager, userId, item, savedLog)
+      return this.toCompleteResDto(qr.manager, userId, item, savedLog, unlockedCollections)
     } catch (e) {
       if (qr.isTransactionActive) await qr.rollbackTransaction()
       throw e
@@ -439,6 +445,7 @@ export class DailyMissionService {
     userId: number,
     item: { id: number; missionId: number },
     mylog: MyLog | null,
+    unlockedCollections: UnlockedCollection[],
   ): Promise<PostMissionCompleteResDto> {
     const row = await manager
       .createQueryBuilder(DailyMissionItem, 'item')
@@ -476,6 +483,7 @@ export class DailyMissionService {
             memo: mylog.memo ?? null,
           }
         : null,
+      unlockedCollections,
     })
   }
 }
