@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
+
+import { CollectionType } from '../../collection.entity'
 
 export class FeaturedCollectionResDto {
   @IsString()
@@ -18,6 +20,10 @@ export class FeaturedCollectionResDto {
   @IsString()
   @ApiProperty()
   title: string
+
+  @IsEnum(CollectionType)
+  @ApiProperty({ enum: CollectionType, description: '컬렉션 타입 (NORMAL | SPECIAL)' })
+  type: CollectionType
 
   constructor(partial: Partial<FeaturedCollectionResDto>) {
     Object.assign(this, partial)

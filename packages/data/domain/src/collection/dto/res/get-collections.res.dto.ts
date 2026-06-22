@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
+
+import { CollectionType } from '../../collection.entity'
 
 export class CollectionRequirementResDto {
   @IsInt()
@@ -29,6 +31,10 @@ export class CollectionItemResDto {
   @IsString()
   @ApiProperty()
   title: string
+
+  @IsEnum(CollectionType)
+  @ApiProperty({ enum: CollectionType, description: '컬렉션 타입 (NORMAL | SPECIAL)' })
+  type: CollectionType
 
   @IsBoolean()
   @ApiProperty()

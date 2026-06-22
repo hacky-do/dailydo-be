@@ -4,11 +4,14 @@ import {
   IsArray,
   IsBoolean,
   IsDate,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator'
+
+import { CollectionType } from '../../../collection/collection.entity'
 
 /** 완료 응답의 마이로그 sub-object (backend-spec §4.5). */
 export class CompleteMissionMyLogResDto {
@@ -36,6 +39,10 @@ export class UnlockedCollectionResDto {
   @IsString()
   @ApiProperty()
   title: string
+
+  @IsEnum(CollectionType)
+  @ApiProperty({ enum: CollectionType, description: '컬렉션 타입 (NORMAL | SPECIAL)' })
+  type: CollectionType
 
   @IsOptional()
   @IsString()

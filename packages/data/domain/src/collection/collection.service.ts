@@ -8,10 +8,12 @@ import {
   GetCollectionsResDto
 } from './dto/res/get-collections.res.dto'
 import { FeaturedCollectionResDto } from './dto/res/featured-collection.res.dto'
+import { CollectionType } from './collection.entity'
 
 interface CollectionListRow {
   collectionId: string
   title: string
+  type: CollectionType
   image: string | null
   description: string
   completed: boolean | string
@@ -30,12 +32,14 @@ interface FeaturedCollectionRow {
   image: string | null
   description: string
   title: string
+  type: CollectionType
 }
 
 /** 미션 완료로 새로 해금된 컬렉션 (미션 완료 응답에 실린다). */
 export interface UnlockedCollection {
   collectionId: string
   title: string
+  type: CollectionType
   image: string | null
   description: string
 }
@@ -53,6 +57,7 @@ export class CollectionService {
          acquired AS (SELECT "collectionId", COUNT(*)::numeric n FROM "UserCollection" GROUP BY "collectionId")
        SELECT c."id"::text "collectionId",
          CASE WHEN c."type"='SPECIAL' AND uc."id" IS NULL THEN '???' ELSE c."title" END "title",
+         c."type" "type",
          c."imageUrl" "image", c."description", (uc."id" IS NOT NULL) "completed",
          ROUND(COALESCE(a.n,0)*100/NULLIF(t.n,0),1) "acquisitionRate"
        FROM "Collection" c CROSS JOIN total_users t
@@ -69,6 +74,7 @@ export class CollectionService {
       collectionId: row.collectionId,
       image: row.image ?? null,
       title: row.title,
+      type: row.type,
       completed: row.completed === true || row.completed === 't',
       description: row.description,
       acquisitionRate: Number(row.acquisitionRate ?? 0),
@@ -83,7 +89,8 @@ export class CollectionService {
       `SELECT c."id"::text "id",
          c."imageUrl" "image",
          c."description",
-         c."title"
+         c."title",
+         c."type"
        FROM "UserCollection" uc
        INNER JOIN "Collection" c ON c."id" = uc."collectionId"
        WHERE uc."userId" = $1
@@ -98,7 +105,8 @@ export class CollectionService {
       id: row[0].id,
       image: row[0].image ?? null,
       description: row[0].description,
-      title: row[0].title
+      title: row[0].title,
+      type: row[0].type
     })
   }
 
@@ -125,7 +133,7 @@ export class CollectionService {
       )
 
       const row = await manager.query<FeaturedCollectionRow[]>(
-        `SELECT c."id"::text "id", c."imageUrl" "image", c."description", c."title"
+        `SELECT c."id"::text "id", c."imageUrl" "image", c."description", c."title", c."type"
          FROM "Collection" c WHERE c."id" = $1`,
         [id]
       )
@@ -133,7 +141,8 @@ export class CollectionService {
         id: row[0].id,
         image: row[0].image ?? null,
         description: row[0].description,
-        title: row[0].title
+        title: row[0].title,
+        type: row[0].type
       })
     })
   }
@@ -153,7 +162,7 @@ export class CollectionService {
     // 미션 완료 트랜잭션(manager) 안에서 실행 → 원자적. ON CONFLICT 로 멱등.
     // 새로 INSERT 된(=이번에 해금된) 컬렉션만 RETURNING → Collection 정보 붙여 반환.
     const rows = await manager.query<
-      Array<{ collectionId: string; title: string; image: string | null; description: string }>
+      Array<{ collectionId: string; title: string; type: CollectionType; image: string | null; description: string }>
     >(
       `WITH candidate AS (
          SELECT DISTINCT "collectionId" FROM "CollectionRequirement" WHERE "missionId" = $2
@@ -174,13 +183,14 @@ export class CollectionService {
          ON CONFLICT ("userId", "collectionId") DO NOTHING
          RETURNING "collectionId"
        )
-       SELECT c."id"::text "collectionId", c."title", c."imageUrl" "image", c."description"
+       SELECT c."id"::text "collectionId", c."title", c."type", c."imageUrl" "image", c."description"
        FROM ins JOIN "Collection" c ON c."id" = ins."collectionId"`,
       [userId, missionId]
     )
     return rows.map((r) => ({
       collectionId: r.collectionId,
       title: r.title,
+      type: r.type,
       image: r.image ?? null,
       description: r.description
     }))
