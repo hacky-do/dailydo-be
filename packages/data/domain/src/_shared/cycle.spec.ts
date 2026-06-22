@@ -17,32 +17,34 @@ dayjs.extend(timezone)
 /** KST 로컬 시각 문자열을 실제 UTC Date(=함수 now 인자) 로 변환 */
 const kstInstant = (s: string): Date => dayjs.tz(s, 'Asia/Seoul').toDate()
 
-describe('cycle (v2 — 하루 1번 모델): KST 자정 경계 / seed / deterministic 샘플링', () => {
+describe('cycle (v2 — 하루 1번 모델): KST 오전 5시 경계 / seed / deterministic 샘플링', () => {
   // ──────────────────────────────────────────────────────────────
-  // 정책 1 — KST 자정 경계 (하루 1번)
+  // 정책 1 — KST 오전 5시 경계 (새벽 0~5시는 전날 미션)
   // ──────────────────────────────────────────────────────────────
-  describe('정책: missionDate 는 KST 자정 기준으로 결정된다', () => {
-    it('getMissionDate_kst0000_isTheNewDay', () => {
-      expect(getMissionDate(kstInstant('2026-05-22 00:00'))).toBe('2026-05-22')
+  describe('정책: missionDate 는 KST 오전 5시 기준으로 결정된다', () => {
+    it('getMissionDate_kst0500_isTheNewDay', () => {
+      // 오전 5시 정각 = 새 미션일 시작
+      expect(getMissionDate(kstInstant('2026-05-22 05:00'))).toBe('2026-05-22')
     })
 
-    it('getMissionDate_kst2359_isStillSameDay', () => {
+    it('getMissionDate_kst0459_isStillPreviousDay', () => {
+      // 5시 직전 = 아직 전날 미션
+      expect(getMissionDate(kstInstant('2026-05-22 04:59'))).toBe('2026-05-21')
+    })
+
+    it('getMissionDate_kstMidnight_isPreviousDay', () => {
+      // 자정은 5시 전 → 전날로 귀속
+      expect(getMissionDate(kstInstant('2026-05-22 00:00'))).toBe('2026-05-21')
+    })
+
+    it('getMissionDate_kst2359_isSameDay', () => {
       expect(getMissionDate(kstInstant('2026-05-22 23:59'))).toBe('2026-05-22')
-    })
-
-    it('getMissionDate_kst0001_nextDay', () => {
-      expect(getMissionDate(kstInstant('2026-05-23 00:01'))).toBe('2026-05-23')
     })
 
     it('getMissionDate_serverTzAgnostic_sameResultRegardlessOfHostTz', () => {
       // 같은 UTC instant → 호스트 TZ 무관하게 같은 결과
-      // 2026-05-22T15:00:00.000Z = 2026-05-23 00:00 KST
-      expect(getMissionDate(new Date('2026-05-22T15:00:00.000Z'))).toBe('2026-05-23')
-    })
-
-    it('getMissionDate_kstJustBeforeMidnight_staysSameDay', () => {
-      // 2026-05-22T14:59:59.999Z = 2026-05-22 23:59:59 KST (전날)
-      expect(getMissionDate(new Date('2026-05-22T14:59:59.999Z'))).toBe('2026-05-22')
+      // 2026-05-22T20:00:00.000Z = 2026-05-23 05:00 KST → 당일
+      expect(getMissionDate(new Date('2026-05-22T20:00:00.000Z'))).toBe('2026-05-23')
     })
   })
 
