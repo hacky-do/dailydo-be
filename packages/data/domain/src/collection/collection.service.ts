@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { EntityManager, DataSource } from 'typeorm'
 
@@ -33,6 +33,25 @@ interface FeaturedCollectionRow {
   description: string
   title: string
   type: CollectionType
+}
+
+/** 운영 데이터 주입용 입력 (무인증 admin 컨트롤러 전용). */
+interface CreateCollectionInput {
+  title: string
+  description?: string
+  imageUrl?: string
+  type?: CollectionType
+  isActive?: boolean
+  sortOrder?: number
+}
+
+/** 매핑용 미션 목록 행. */
+interface MissionListItem {
+  id: string
+  categoryId: string
+  title: string
+  type: string
+  isActive: boolean
 }
 
 /** 미션 완료로 새로 해금된 컬렉션 (미션 완료 응답에 실린다). */
@@ -194,6 +213,84 @@ export class CollectionService {
       image: r.image ?? null,
       description: r.description
     }))
+  }
+
+  // ── 운영 데이터 주입용 (무인증 admin 컨트롤러 전용, prod 노출 금지) ────────────
+
+  /** 컬렉션 단건 생성 → 새 id 반환. */
+  async createCollection(input: CreateCollectionInput): Promise<{ id: string }> {
+    const rows = await this.dataSource.query<{ id: string }[]>(
+      `INSERT INTO "Collection" ("title", "description", "imageUrl", "type", "isActive", "sortOrder")
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING "id"::text "id"`,
+      [
+        input.title,
+        input.description ?? '',
+        input.imageUrl ?? null,
+        input.type ?? CollectionType.NORMAL,
+        input.isActive ?? true,
+        input.sortOrder ?? 0
+      ]
+    )
+    return { id: rows[0].id }
+  }
+
+  /** 매핑(획득 조건) 작성용 — 전체 미션 목록. */
+  async listAllMissions(): Promise<MissionListItem[]> {
+    return this.dataSource.query<MissionListItem[]>(
+      `SELECT "id"::text "id", "categoryId"::text "categoryId",
+              "title", "type", "isActive"
+       FROM "Mission"
+       ORDER BY "categoryId", "id"`
+    )
+  }
+
+  /**
+   * 컬렉션 1개에 미션 N개를 획득 조건으로 매핑 (CollectionRequirement).
+   * FK 가 논리 FK(DB 제약 없음)라 미션 존재를 앱에서 가드 → orphan 방지.
+   * (collectionId, missionId) UNIQUE 로 멱등 (ON CONFLICT DO NOTHING).
+   */
+  async saveRequirements(
+    collectionId: string,
+    items: { missionId: string; requiredCount?: number }[]
+  ): Promise<{ inserted: number; skippedMissionIds: string[] }> {
+    const cid = this.parseCollectionId(collectionId)
+
+    return this.dataSource.transaction(async (manager) => {
+      const col = await manager.query<{ ok: boolean }[]>(
+        `SELECT true "ok" FROM "Collection" WHERE "id" = $1 LIMIT 1`,
+        [cid]
+      )
+      if (!col[0]) throw new NotFoundException('collection_not_found')
+
+      // 존재하는 미션만 추림 (FK 없음 → orphan 차단). 없는 missionId 는 skip 으로 보고.
+      const missionIds = items.map((i) => Number(i.missionId))
+      const existRows = await manager.query<{ id: string }[]>(
+        `SELECT "id"::text "id" FROM "Mission" WHERE "id" = ANY($1::bigint[])`,
+        [missionIds]
+      )
+      const existing = new Set(existRows.map((r) => r.id))
+
+      const skippedMissionIds: string[] = []
+      let inserted = 0
+      for (const item of items) {
+        const key = String(Number(item.missionId))
+        if (!existing.has(key)) {
+          skippedMissionIds.push(item.missionId)
+          continue
+        }
+        const r = await manager.query<{ id: string }[]>(
+          `INSERT INTO "CollectionRequirement" ("collectionId", "missionId", "requiredCount")
+           VALUES ($1, $2, $3)
+           ON CONFLICT ("collectionId", "missionId") DO NOTHING
+           RETURNING "id"::text "id"`,
+          [cid, Number(item.missionId), item.requiredCount ?? 1]
+        )
+        if (r[0]) inserted++
+      }
+
+      return { inserted, skippedMissionIds }
+    })
   }
 
   private parseCollectionId(collectionId: string): number {
