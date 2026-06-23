@@ -24,7 +24,7 @@ export class CookieService {
       secure: onCloud,
       path,
       domain,
-      sameSite: 'strict',
+      sameSite: 'lax',
       httpOnly: true,
       maxAge: Math.floor(maxAge / 1000)
     })
@@ -35,7 +35,7 @@ export class CookieService {
       secure: onCloud,
       path,
       domain,
-      sameSite: 'strict',
+      sameSite: 'lax',
       httpOnly: true
     }
     cookies.forEach((cookie) => {
