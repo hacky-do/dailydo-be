@@ -39,7 +39,7 @@ export class ResponseInterceptor implements NestInterceptor {
             context.getClass()
           ])
           const res = context.switchToHttp().getResponse<FastifyReply>()
-          if (typeof data === 'object' && apiResponse[res.statusCode]?.type?.constructor) {
+          if (data !== null && typeof data === 'object' && apiResponse[res.statusCode]?.type?.constructor) {
             const classObject: any = plainToClass(apiResponse[res.statusCode].type, instanceToPlain({ ...data }))
             const errors: ValidationError[] = await validate(classObject, {
               validationError: { target: false, value: false },

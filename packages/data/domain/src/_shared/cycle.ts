@@ -24,9 +24,12 @@ export const MYLOG_IMAGE_MAX_BYTES = 2 * 1024 * 1024
 export const MYLOG_ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp'] as const
 
 const KST = 'Asia/Seoul'
+/** 미션일 시작 시각 (KST). 새벽 00:00~04:59 는 전날 미션으로 귀속된다. */
+const MISSION_DAY_START_HOUR = 5
 
 export function getMissionDate(now: Date): string {
-  return dayjs(now).tz(KST).format('YYYY-MM-DD')
+  // KST 오전 5시 경계: 5시간 빼서 날짜를 산출 → 0~5시는 전날로 귀속.
+  return dayjs(now).tz(KST).subtract(MISSION_DAY_START_HOUR, 'hour').format('YYYY-MM-DD')
 }
 
 export function dailySeed(userId: number | null, missionDate: string): number {
