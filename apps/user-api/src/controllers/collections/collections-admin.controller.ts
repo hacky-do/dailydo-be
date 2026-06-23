@@ -2,6 +2,7 @@
 // 일회성 seed 작업 후 이 파일 + collections-http.module 등록 한 줄을 제거할 것.
 import { Public } from '@data/decorators'
 import {
+  BackfillResDto,
   CollectionService,
   CreateCollectionReqDto,
   CreateCollectionResDto,
@@ -44,5 +45,14 @@ export class CollectionsAdminController {
     @Body() dto: SaveRequirementsReqDto
   ): Promise<SaveRequirementsResDto> {
     return new SaveRequirementsResDto(await this.collectionService.saveRequirements(collectionId, dto.requirements))
+  }
+
+  @Public()
+  @Post('backfill-signup-unlock')
+  @HttpCode(200)
+  @ApiOperation({ summary: '기존 전체 유저에게 가입 보상 컬렉션 소급 해금 (일회성, 멱등)' })
+  @ApiOkResponse({ type: BackfillResDto })
+  async backfillSignup(): Promise<BackfillResDto> {
+    return new BackfillResDto(await this.collectionService.backfillSignupUnlock())
   }
 }

@@ -310,6 +310,13 @@ export class DailyMissionService {
       let unlockedCollections: UnlockedCollection[] = []
 
       if (justCompleted) {
+        // 유저 인생 첫 미션 완료인지 — stat upsert 전에 판별 (upsert 후엔 행이 생겨 판별 불가)
+        const statBefore = await qr.manager.query<{ ex: boolean }[]>(
+          `SELECT EXISTS(SELECT 1 FROM "UserMissionStat" WHERE "userId" = $1) "ex"`,
+          [userId],
+        )
+        const isFirstEverComplete = !statBefore[0]?.ex
+
         await this.missionService.incrementCompletedCount(qr.manager, item.missionId)
         await qr.manager.query(
           `INSERT INTO "UserMissionStat"
@@ -329,6 +336,16 @@ export class DailyMissionService {
           userId,
           item.missionId,
         )
+
+        // 첫 미션 완료 보상 ("시작의 트로피") — 미션 매핑으로 표현 불가한 이벤트성 해금
+        if (isFirstEverComplete) {
+          const trophy = await this.collectionService.unlockByTitle(
+            qr.manager,
+            userId,
+            CollectionService.FIRST_MISSION_COLLECTION_TITLE,
+          )
+          if (trophy) unlockedCollections.push(trophy)
+        }
       }
 
       let savedLog: MyLog | null = null

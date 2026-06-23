@@ -12,6 +12,7 @@ export { SaveRequirementsReqDto, RequirementItemDto } from './dto/req/save-requi
 export { CreateCollectionResDto } from './dto/res/create-collection.res.dto'
 export { ListMissionsResDto, MissionListItemDto } from './dto/res/list-missions.res.dto'
 export { SaveRequirementsResDto } from './dto/res/save-requirements.res.dto'
+export { BackfillResDto } from './dto/res/backfill.res.dto'
 export { FeaturedCollectionResDto } from './dto/res/featured-collection.res.dto'
 export {
   CollectionItemResDto,
