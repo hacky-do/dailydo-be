@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { EntityManager, DataSource } from 'typeorm'
 
@@ -65,6 +65,12 @@ export interface UnlockedCollection {
 
 @Injectable()
 export class CollectionService {
+  // 이벤트성 해금 컬렉션 식별용 title 상수 (가입/첫완료 보상 — 미션 매핑으로 표현 불가)
+  static readonly SIGNUP_COLLECTION_TITLE = '첫 만남은 너무 어려워'
+  static readonly FIRST_MISSION_COLLECTION_TITLE = '시작의 트로피'
+
+  private readonly logger = new Logger(CollectionService.name)
+
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource
@@ -215,6 +221,52 @@ export class CollectionService {
     }))
   }
 
+  /**
+   * title 로 특정 컬렉션을 찾아 해금 (가입/첫완료 같은 이벤트성 보상).
+   * unlockEligible 과 동일하게 EntityManager 를 받아 호출자 트랜잭션에 합류, ON CONFLICT 멱등.
+   * title 미스매치면 경고 로그(silent 방지) 후 null.
+   */
+  async unlockByTitle(
+    manager: EntityManager,
+    userId: number,
+    title: string
+  ): Promise<UnlockedCollection | null> {
+    const rows = await manager.query<
+      Array<{ collectionId: string; title: string; type: CollectionType; image: string | null; description: string }>
+    >(
+      `WITH target AS (
+         SELECT "id" FROM "Collection" WHERE "title" = $2 AND "isActive" = true ORDER BY "id" LIMIT 1
+       ),
+       ins AS (
+         INSERT INTO "UserCollection" ("userId", "collectionId", "acquiredAt")
+         SELECT $1, t."id", now() FROM target t
+         ON CONFLICT ("userId", "collectionId") DO NOTHING
+         RETURNING "collectionId"
+       )
+       SELECT c."id"::text "collectionId", c."title", c."type", c."imageUrl" "image", c."description"
+       FROM ins JOIN "Collection" c ON c."id" = ins."collectionId"`,
+      [userId, title]
+    )
+    if (rows[0]) {
+      return {
+        collectionId: rows[0].collectionId,
+        title: rows[0].title,
+        type: rows[0].type,
+        image: rows[0].image ?? null,
+        description: rows[0].description
+      }
+    }
+    // INSERT 0건 — 이미 해금됐거나 title 미스매치. 후자면 경고(silent 방지).
+    const exists = await manager.query<{ ok: boolean }[]>(
+      `SELECT true "ok" FROM "Collection" WHERE "title" = $1 AND "isActive" = true LIMIT 1`,
+      [title]
+    )
+    if (!exists[0]) {
+      this.logger.warn(`unlockByTitle: 컬렉션을 title로 못 찾음 — title="${title}" (해금 스킵)`)
+    }
+    return null
+  }
+
   // ── 운영 데이터 주입용 (무인증 admin 컨트롤러 전용, prod 노출 금지) ────────────
 
   /** 컬렉션 단건 생성 → 새 id 반환. */
@@ -291,6 +343,41 @@ export class CollectionService {
 
       return { inserted, skippedMissionIds }
     })
+  }
+
+  /**
+   * 이벤트성 보상 컬렉션을 기존 유저에게 소급 해금 (일회성 backfill, 멱등).
+   * - 가입 보상("첫 만남"): 전체 활성 유저
+   * - 첫완료 보상("시작의 트로피"): 이미 미션 완료(UserMissionStat 보유)한 활성 유저
+   * 신규 유저는 register/completeItem 에서 해금되지만, 로직 배포 전 유저는 이걸로 채운다.
+   */
+  async backfillEventUnlock(): Promise<{ signupAffected: number; trophyAffected: number }> {
+    const signup = await this.dataSource.query<{ userId: string }[]>(
+      `WITH target AS (
+         SELECT "id" FROM "Collection" WHERE "title" = $1 AND "isActive" = true ORDER BY "id" LIMIT 1
+       )
+       INSERT INTO "UserCollection" ("userId", "collectionId", "acquiredAt")
+       SELECT u."id", t."id", now()
+       FROM "User" u CROSS JOIN target t
+       WHERE u."deletedAt" IS NULL
+       ON CONFLICT ("userId", "collectionId") DO NOTHING
+       RETURNING "userId"::text "userId"`,
+      [CollectionService.SIGNUP_COLLECTION_TITLE]
+    )
+    const trophy = await this.dataSource.query<{ userId: string }[]>(
+      `WITH target AS (
+         SELECT "id" FROM "Collection" WHERE "title" = $1 AND "isActive" = true ORDER BY "id" LIMIT 1
+       )
+       INSERT INTO "UserCollection" ("userId", "collectionId", "acquiredAt")
+       SELECT DISTINCT ums."userId", t."id", now()
+       FROM "UserMissionStat" ums
+       CROSS JOIN target t
+       JOIN "User" u ON u."id" = ums."userId" AND u."deletedAt" IS NULL
+       ON CONFLICT ("userId", "collectionId") DO NOTHING
+       RETURNING "userId"::text "userId"`,
+      [CollectionService.FIRST_MISSION_COLLECTION_TITLE]
+    )
+    return { signupAffected: signup.length, trophyAffected: trophy.length }
   }
 
   private parseCollectionId(collectionId: string): number {

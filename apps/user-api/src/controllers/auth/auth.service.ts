@@ -10,6 +10,7 @@ import {
 import { UserAccountType, UserService } from '@data/domain/user'
 import { VERIFICATION_AUDIENCE } from '@data/domain/verification'
 import { createPasswordHash, passwordIterations, verifyPassword } from '@data/lib'
+import { CollectionService } from '@data/domain/collection'
 import { SocialService } from '@infra/social'
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -33,7 +34,8 @@ export class AuthService {
     @InjectRepository(Verification)
     private readonly verificationRepository: Repository<Verification>,
     private readonly socialService: SocialService,
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    private readonly collectionService: CollectionService
   ) {}
 
   // doc
@@ -105,6 +107,13 @@ export class AuthService {
       }
       const setting = new UserSetting({ user, agreeMarketing })
       await queryRunner.manager.save(setting)
+
+      // 가입 보상 컬렉션 ("첫 만남은 너무 어려워") — 같은 트랜잭션에서 원자적 해금
+      await this.collectionService.unlockByTitle(
+        queryRunner.manager,
+        user.id,
+        CollectionService.SIGNUP_COLLECTION_TITLE
+      )
       await queryRunner.commitTransaction()
       this.createDefaultUserMissionCategories(user.id).catch((error) => {
         this.logger.error(`Failed to create default mission categories for user ${user.id}`, error.stack)
