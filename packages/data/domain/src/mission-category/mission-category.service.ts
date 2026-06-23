@@ -69,10 +69,10 @@ export class MissionCategoryService {
     const missionCategory = await this.missionCategoryRepo.findOne({ where: { id } })
     if (!missionCategory) throw new NotFoundException('not_found_category')
 
-    if (options.name !== undefined) {
+    if (options.name != null) {
       missionCategory.name = options.name
     }
-    if (options.image !== undefined) {
+    if (options.image != null) {
       missionCategory.image = options.image
     }
 
