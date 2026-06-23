@@ -346,11 +346,13 @@ export class CollectionService {
   }
 
   /**
-   * 가입 보상 컬렉션("첫 만남")을 기존 전체 활성 유저에게 소급 해금 (일회성 backfill, 멱등).
-   * 신규 가입자는 register 에서 해금되지만, 로직 배포 전 가입한 유저는 이걸로 채운다.
+   * 이벤트성 보상 컬렉션을 기존 유저에게 소급 해금 (일회성 backfill, 멱등).
+   * - 가입 보상("첫 만남"): 전체 활성 유저
+   * - 첫완료 보상("시작의 트로피"): 이미 미션 완료(UserMissionStat 보유)한 활성 유저
+   * 신규 유저는 register/completeItem 에서 해금되지만, 로직 배포 전 유저는 이걸로 채운다.
    */
-  async backfillSignupUnlock(): Promise<{ affected: number }> {
-    const rows = await this.dataSource.query<{ userId: string }[]>(
+  async backfillEventUnlock(): Promise<{ signupAffected: number; trophyAffected: number }> {
+    const signup = await this.dataSource.query<{ userId: string }[]>(
       `WITH target AS (
          SELECT "id" FROM "Collection" WHERE "title" = $1 AND "isActive" = true ORDER BY "id" LIMIT 1
        )
@@ -362,7 +364,20 @@ export class CollectionService {
        RETURNING "userId"::text "userId"`,
       [CollectionService.SIGNUP_COLLECTION_TITLE]
     )
-    return { affected: rows.length }
+    const trophy = await this.dataSource.query<{ userId: string }[]>(
+      `WITH target AS (
+         SELECT "id" FROM "Collection" WHERE "title" = $1 AND "isActive" = true ORDER BY "id" LIMIT 1
+       )
+       INSERT INTO "UserCollection" ("userId", "collectionId", "acquiredAt")
+       SELECT DISTINCT ums."userId", t."id", now()
+       FROM "UserMissionStat" ums
+       CROSS JOIN target t
+       JOIN "User" u ON u."id" = ums."userId" AND u."deletedAt" IS NULL
+       ON CONFLICT ("userId", "collectionId") DO NOTHING
+       RETURNING "userId"::text "userId"`,
+      [CollectionService.FIRST_MISSION_COLLECTION_TITLE]
+    )
+    return { signupAffected: signup.length, trophyAffected: trophy.length }
   }
 
   private parseCollectionId(collectionId: string): number {

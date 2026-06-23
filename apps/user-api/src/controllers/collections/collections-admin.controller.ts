@@ -48,11 +48,11 @@ export class CollectionsAdminController {
   }
 
   @Public()
-  @Post('backfill-signup-unlock')
+  @Post('backfill-event-unlock')
   @HttpCode(200)
-  @ApiOperation({ summary: '기존 전체 유저에게 가입 보상 컬렉션 소급 해금 (일회성, 멱등)' })
+  @ApiOperation({ summary: '기존 유저에게 이벤트성 보상(가입/첫완료) 소급 해금 (일회성, 멱등)' })
   @ApiOkResponse({ type: BackfillResDto })
-  async backfillSignup(): Promise<BackfillResDto> {
-    return new BackfillResDto(await this.collectionService.backfillSignupUnlock())
+  async backfillEvent(): Promise<BackfillResDto> {
+    return new BackfillResDto(await this.collectionService.backfillEventUnlock())
   }
 }
